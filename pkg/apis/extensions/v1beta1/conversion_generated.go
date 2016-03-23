@@ -3439,6 +3439,81 @@ func Convert_extensions_JobStatus_To_v1beta1_JobStatus(in *extensions.JobStatus,
 	return autoConvert_extensions_JobStatus_To_v1beta1_JobStatus(in, out, s)
 }
 
+func autoConvert_extensions_Migration_To_v1beta1_Migration(in *extensions.Migration, out *Migration, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*extensions.Migration))(in)
+	}
+	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
+		return err
+	}
+	if err := Convert_api_ObjectMeta_To_v1_ObjectMeta(&in.ObjectMeta, &out.ObjectMeta, s); err != nil {
+		return err
+	}
+	if err := Convert_extensions_MigrationSpec_To_v1beta1_MigrationSpec(&in.Spec, &out.Spec, s); err != nil {
+		return err
+	}
+	if err := Convert_extensions_MigrationStatus_To_v1beta1_MigrationStatus(&in.Status, &out.Status, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+func Convert_extensions_Migration_To_v1beta1_Migration(in *extensions.Migration, out *Migration, s conversion.Scope) error {
+	return autoConvert_extensions_Migration_To_v1beta1_Migration(in, out, s)
+}
+
+func autoConvert_extensions_MigrationList_To_v1beta1_MigrationList(in *extensions.MigrationList, out *MigrationList, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*extensions.MigrationList))(in)
+	}
+	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
+		return err
+	}
+	if err := api.Convert_unversioned_ListMeta_To_unversioned_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
+		return err
+	}
+	if in.Items != nil {
+		out.Items = make([]Migration, len(in.Items))
+		for i := range in.Items {
+			if err := Convert_extensions_Migration_To_v1beta1_Migration(&in.Items[i], &out.Items[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
+	return nil
+}
+
+func Convert_extensions_MigrationList_To_v1beta1_MigrationList(in *extensions.MigrationList, out *MigrationList, s conversion.Scope) error {
+	return autoConvert_extensions_MigrationList_To_v1beta1_MigrationList(in, out, s)
+}
+
+func autoConvert_extensions_MigrationSpec_To_v1beta1_MigrationSpec(in *extensions.MigrationSpec, out *MigrationSpec, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*extensions.MigrationSpec))(in)
+	}
+	out.PodName = in.PodName
+	out.DestNodeName = in.DestNodeName
+	return nil
+}
+
+func Convert_extensions_MigrationSpec_To_v1beta1_MigrationSpec(in *extensions.MigrationSpec, out *MigrationSpec, s conversion.Scope) error {
+	return autoConvert_extensions_MigrationSpec_To_v1beta1_MigrationSpec(in, out, s)
+}
+
+func autoConvert_extensions_MigrationStatus_To_v1beta1_MigrationStatus(in *extensions.MigrationStatus, out *MigrationStatus, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*extensions.MigrationStatus))(in)
+	}
+	out.Phase = MigrationPhase(in.Phase)
+	return nil
+}
+
+func Convert_extensions_MigrationStatus_To_v1beta1_MigrationStatus(in *extensions.MigrationStatus, out *MigrationStatus, s conversion.Scope) error {
+	return autoConvert_extensions_MigrationStatus_To_v1beta1_MigrationStatus(in, out, s)
+}
+
 func autoConvert_extensions_PodSecurityPolicy_To_v1beta1_PodSecurityPolicy(in *extensions.PodSecurityPolicy, out *PodSecurityPolicy, s conversion.Scope) error {
 	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
 		defaulting.(func(*extensions.PodSecurityPolicy))(in)
@@ -4685,6 +4760,81 @@ func Convert_v1beta1_ListOptions_To_api_ListOptions(in *ListOptions, out *api.Li
 	return autoConvert_v1beta1_ListOptions_To_api_ListOptions(in, out, s)
 }
 
+func autoConvert_v1beta1_Migration_To_extensions_Migration(in *Migration, out *extensions.Migration, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*Migration))(in)
+	}
+	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
+		return err
+	}
+	if err := Convert_v1_ObjectMeta_To_api_ObjectMeta(&in.ObjectMeta, &out.ObjectMeta, s); err != nil {
+		return err
+	}
+	if err := Convert_v1beta1_MigrationSpec_To_extensions_MigrationSpec(&in.Spec, &out.Spec, s); err != nil {
+		return err
+	}
+	if err := Convert_v1beta1_MigrationStatus_To_extensions_MigrationStatus(&in.Status, &out.Status, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+func Convert_v1beta1_Migration_To_extensions_Migration(in *Migration, out *extensions.Migration, s conversion.Scope) error {
+	return autoConvert_v1beta1_Migration_To_extensions_Migration(in, out, s)
+}
+
+func autoConvert_v1beta1_MigrationList_To_extensions_MigrationList(in *MigrationList, out *extensions.MigrationList, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*MigrationList))(in)
+	}
+	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
+		return err
+	}
+	if err := api.Convert_unversioned_ListMeta_To_unversioned_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
+		return err
+	}
+	if in.Items != nil {
+		out.Items = make([]extensions.Migration, len(in.Items))
+		for i := range in.Items {
+			if err := Convert_v1beta1_Migration_To_extensions_Migration(&in.Items[i], &out.Items[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
+	return nil
+}
+
+func Convert_v1beta1_MigrationList_To_extensions_MigrationList(in *MigrationList, out *extensions.MigrationList, s conversion.Scope) error {
+	return autoConvert_v1beta1_MigrationList_To_extensions_MigrationList(in, out, s)
+}
+
+func autoConvert_v1beta1_MigrationSpec_To_extensions_MigrationSpec(in *MigrationSpec, out *extensions.MigrationSpec, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*MigrationSpec))(in)
+	}
+	out.PodName = in.PodName
+	out.DestNodeName = in.DestNodeName
+	return nil
+}
+
+func Convert_v1beta1_MigrationSpec_To_extensions_MigrationSpec(in *MigrationSpec, out *extensions.MigrationSpec, s conversion.Scope) error {
+	return autoConvert_v1beta1_MigrationSpec_To_extensions_MigrationSpec(in, out, s)
+}
+
+func autoConvert_v1beta1_MigrationStatus_To_extensions_MigrationStatus(in *MigrationStatus, out *extensions.MigrationStatus, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*MigrationStatus))(in)
+	}
+	out.Phase = extensions.MigrationPhase(in.Phase)
+	return nil
+}
+
+func Convert_v1beta1_MigrationStatus_To_extensions_MigrationStatus(in *MigrationStatus, out *extensions.MigrationStatus, s conversion.Scope) error {
+	return autoConvert_v1beta1_MigrationStatus_To_extensions_MigrationStatus(in, out, s)
+}
+
 func autoConvert_v1beta1_PodSecurityPolicy_To_extensions_PodSecurityPolicy(in *PodSecurityPolicy, out *extensions.PodSecurityPolicy, s conversion.Scope) error {
 	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
 		defaulting.(func(*PodSecurityPolicy))(in)
@@ -5187,6 +5337,10 @@ func init() {
 		autoConvert_extensions_JobSpec_To_v1beta1_JobSpec,
 		autoConvert_extensions_JobStatus_To_v1beta1_JobStatus,
 		autoConvert_extensions_Job_To_v1beta1_Job,
+		autoConvert_extensions_MigrationList_To_v1beta1_MigrationList,
+		autoConvert_extensions_MigrationSpec_To_v1beta1_MigrationSpec,
+		autoConvert_extensions_MigrationStatus_To_v1beta1_MigrationStatus,
+		autoConvert_extensions_Migration_To_v1beta1_Migration,
 		autoConvert_extensions_PodSecurityPolicyList_To_v1beta1_PodSecurityPolicyList,
 		autoConvert_extensions_PodSecurityPolicySpec_To_v1beta1_PodSecurityPolicySpec,
 		autoConvert_extensions_PodSecurityPolicy_To_v1beta1_PodSecurityPolicy,
@@ -5292,6 +5446,10 @@ func init() {
 		autoConvert_v1beta1_LabelSelectorRequirement_To_unversioned_LabelSelectorRequirement,
 		autoConvert_v1beta1_LabelSelector_To_unversioned_LabelSelector,
 		autoConvert_v1beta1_ListOptions_To_api_ListOptions,
+		autoConvert_v1beta1_MigrationList_To_extensions_MigrationList,
+		autoConvert_v1beta1_MigrationSpec_To_extensions_MigrationSpec,
+		autoConvert_v1beta1_MigrationStatus_To_extensions_MigrationStatus,
+		autoConvert_v1beta1_Migration_To_extensions_Migration,
 		autoConvert_v1beta1_PodSecurityPolicyList_To_extensions_PodSecurityPolicyList,
 		autoConvert_v1beta1_PodSecurityPolicySpec_To_extensions_PodSecurityPolicySpec,
 		autoConvert_v1beta1_PodSecurityPolicy_To_extensions_PodSecurityPolicy,

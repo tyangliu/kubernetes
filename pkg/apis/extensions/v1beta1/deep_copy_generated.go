@@ -1614,6 +1614,53 @@ func deepCopy_v1beta1_ListOptions(in ListOptions, out *ListOptions, c *conversio
 	return nil
 }
 
+func deepCopy_v1beta1_Migration(in Migration, out *Migration, c *conversion.Cloner) error {
+	if err := deepCopy_unversioned_TypeMeta(in.TypeMeta, &out.TypeMeta, c); err != nil {
+		return err
+	}
+	if err := deepCopy_v1_ObjectMeta(in.ObjectMeta, &out.ObjectMeta, c); err != nil {
+		return err
+	}
+	if err := deepCopy_v1beta1_MigrationSpec(in.Spec, &out.Spec, c); err != nil {
+		return err
+	}
+	if err := deepCopy_v1beta1_MigrationStatus(in.Status, &out.Status, c); err != nil {
+		return err
+	}
+	return nil
+}
+
+func deepCopy_v1beta1_MigrationList(in MigrationList, out *MigrationList, c *conversion.Cloner) error {
+	if err := deepCopy_unversioned_TypeMeta(in.TypeMeta, &out.TypeMeta, c); err != nil {
+		return err
+	}
+	if err := deepCopy_unversioned_ListMeta(in.ListMeta, &out.ListMeta, c); err != nil {
+		return err
+	}
+	if in.Items != nil {
+		out.Items = make([]Migration, len(in.Items))
+		for i := range in.Items {
+			if err := deepCopy_v1beta1_Migration(in.Items[i], &out.Items[i], c); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
+	return nil
+}
+
+func deepCopy_v1beta1_MigrationSpec(in MigrationSpec, out *MigrationSpec, c *conversion.Cloner) error {
+	out.PodName = in.PodName
+	out.DestNodeName = in.DestNodeName
+	return nil
+}
+
+func deepCopy_v1beta1_MigrationStatus(in MigrationStatus, out *MigrationStatus, c *conversion.Cloner) error {
+	out.Phase = in.Phase
+	return nil
+}
+
 func deepCopy_v1beta1_PodSecurityPolicy(in PodSecurityPolicy, out *PodSecurityPolicy, c *conversion.Cloner) error {
 	if err := deepCopy_unversioned_TypeMeta(in.TypeMeta, &out.TypeMeta, c); err != nil {
 		return err
@@ -2031,6 +2078,10 @@ func init() {
 		deepCopy_v1beta1_LabelSelector,
 		deepCopy_v1beta1_LabelSelectorRequirement,
 		deepCopy_v1beta1_ListOptions,
+		deepCopy_v1beta1_Migration,
+		deepCopy_v1beta1_MigrationList,
+		deepCopy_v1beta1_MigrationSpec,
+		deepCopy_v1beta1_MigrationStatus,
 		deepCopy_v1beta1_PodSecurityPolicy,
 		deepCopy_v1beta1_PodSecurityPolicyList,
 		deepCopy_v1beta1_PodSecurityPolicySpec,
