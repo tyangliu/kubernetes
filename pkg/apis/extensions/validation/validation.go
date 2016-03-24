@@ -853,3 +853,45 @@ func ValidatePodSecurityPolicyUpdate(old *extensions.PodSecurityPolicy, new *ext
 	allErrs = append(allErrs, ValidatePodSecurityPolicySpec(&new.Spec, field.NewPath("spec"))...)
 	return allErrs
 }
+
+func ValidateMigration(migration *extensions.Migration) field.ErrorList {
+  // TODO: Perform proper validation here
+  allErrs := field.ErrorList{}
+  return allErrs
+}
+
+func ValidateMigrationSpec(spec *extensions.MigrationSpec, fldPath *field.Path) field.ErrorList {
+  // TODO: Perform proper validation here
+  allErrs := field.ErrorList{}
+  return allErrs
+}
+
+func ValidateMigrationStatus(status *extensions.MigrationStatus, fldPath *field.Path) field.ErrorList {
+  // TODO: Perform proper validation here
+  allErrs := field.ErrorList{}
+  return allErrs
+}
+
+func ValidateMigrationUpdate(migration, oldMigration *extensions.Migration) field.ErrorList {
+  // TODO: Perform proper validation here
+  allErrs := field.ErrorList{}
+  return allErrs
+}
+
+func ValidateMigrationUpdateStatus(migration, oldMigration *extensions.Migration) field.ErrorList {
+  // TODO: Perform proper validation here
+  allErrs := field.ErrorList{}
+  return allErrs
+}
+
+func ValidateMigrationSpecUpdate(spec, oldSpec extensions.MigrationSpec, fldPath *field.Path) field.ErrorList {
+  // TODO: Perform proper validation here
+  allErrs := field.ErrorList{}
+  return allErrs
+}
+
+func ValidateMigrationStatusUpdate(status, oldStatus extensions.MigrationStatus) field.ErrorList {
+  // TODO: Perform proper validation here
+  allErrs := field.ErrorList{}
+  return allErrs
+}
