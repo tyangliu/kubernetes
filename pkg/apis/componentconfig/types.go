@@ -427,6 +427,10 @@ type KubeControllerManagerConfiguration struct {
 	// concurrentNamespaceSyncs is the number of namespace objects that are
 	// allowed to sync concurrently.
 	ConcurrentNamespaceSyncs int `json:"concurrentNamespaceSyncs"`
+	// concurrentMigrationSyncs is the number of migration objects that are
+	// allowed to sync concurrently. Larger number = more responsive migrations,
+	// but more CPU (and network) load.
+	ConcurrentMigrationSyncs int `json:"concurrentMigrationSyncs"`
 	// lookupCacheSizeForRC is the size of lookup cache for replication controllers.
 	// Larger number = more responsive replica management, but more MEM load.
 	LookupCacheSizeForRC int `json:"lookupCacheSizeForRC"`

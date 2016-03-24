@@ -27,3 +27,5 @@ type JobExpansion interface{}
 type ThirdPartyResourceExpansion interface{}
 
 type ReplicaSetExpansion interface{}
+
+type MigrationExpansion interface{}

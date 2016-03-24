@@ -47,6 +47,10 @@ func (c *FakeExtensions) Jobs(namespace string) unversioned.JobInterface {
 	return &FakeJobs{c, namespace}
 }
 
+func (c *FakeExtensions) Migrations(namespace string) unversioned.MigrationInterface {
+	return &FakeMigrations{c, namespace}
+}
+
 func (c *FakeExtensions) ReplicaSets(namespace string) unversioned.ReplicaSetInterface {
 	return &FakeReplicaSets{c, namespace}
 }

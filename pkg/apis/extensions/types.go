@@ -942,13 +942,15 @@ type PodSecurityPolicyList struct {
 	Items []PodSecurityPolicy `json:"items"`
 }
 
-/*
- * The Migration object represents one instance of a migration.
- * Its spec currently denotes a singular pod name to migrate and a
- * singular destination node, for prototyping. Real use case likely
- * involves migrating all pods off a node, migrating to non-explicitly
- * specified nodes, and other combinations.
- */
+
+
+// +genclient=true
+
+// The Migration object represents one instance of a migration.
+// Its spec currently denotes a singular pod name to migrate and a
+// singular destination node, for prototyping. Real use case likely
+// involves migrating all pods off a node, migrating to non-explicitly
+// specified nodes, and other combinations.
 type Migration struct {
 	unversioned.TypeMeta `json:",inline"`
 	api.ObjectMeta `json:"metadata,omitempty"`

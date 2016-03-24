@@ -556,3 +556,15 @@ func (s *StoreToPVCFetcher) GetPersistentVolumeClaimInfo(namespace string, id st
 
 	return o.(*api.PersistentVolumeClaim), nil
 }
+
+type StoreToMigrationLister struct {
+	Store
+}
+
+// StoreToMigrationLister lists all migrations in the store.
+func (s *StoreToMigrationLister) List() (migrations extensions.MigrationList, err error) {
+	for _, c := range s.Store.List() {
+		migrations.Items = append(migrations.Items, *(c.(*extensions.Migration)))
+	}
+	return migrations, nil
+}
