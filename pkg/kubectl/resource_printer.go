@@ -419,6 +419,7 @@ var withNamespacePrefixColumns = []string{"NAMESPACE"} // TODO(erictune): print 
 var deploymentColumns = []string{"NAME", "DESIRED", "CURRENT", "UP-TO-DATE", "AVAILABLE", "AGE"}
 var configMapColumns = []string{"NAME", "DATA", "AGE"}
 var podSecurityPolicyColumns = []string{"NAME", "PRIV", "CAPS", "VOLUMEPLUGINS", "SELINUX", "RUNASUSER"}
+var migrationColumns = []string{"NAME", "POD", "DEST-NODE", "STATUS"}
 
 // addDefaultHandlers adds print handlers for default Kubernetes types.
 func (h *HumanReadablePrinter) addDefaultHandlers() {
@@ -470,6 +471,8 @@ func (h *HumanReadablePrinter) addDefaultHandlers() {
 	h.Handler(configMapColumns, printConfigMapList)
 	h.Handler(podSecurityPolicyColumns, printPodSecurityPolicy)
 	h.Handler(podSecurityPolicyColumns, printPodSecurityPolicyList)
+	h.Handler(migrationColumns, printMigration)
+	h.Handler(migrationColumns, printMigrationList)
 }
 
 func (h *HumanReadablePrinter) unknown(data []byte, w io.Writer) error {
@@ -1593,6 +1596,21 @@ func printPodSecurityPolicy(item *extensions.PodSecurityPolicy, w io.Writer, opt
 func printPodSecurityPolicyList(list *extensions.PodSecurityPolicyList, w io.Writer, options PrintOptions) error {
 	for _, item := range list.Items {
 		if err := printPodSecurityPolicy(&item, w, options); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func printMigration(item *extensions.Migration, w io.Writer, options PrintOptions) error {
+	_, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", item.Name, item.Spec.PodName, item.Spec.DestNodeName, item.Status.Phase)
+	return err
+}
+
+func printMigrationList(list *extensions.MigrationList, w io.Writer, options PrintOptions) error {
+	for _, item := range list.Items {
+		if err := printMigration(&item, w, options); err != nil {
 			return err
 		}
 	}
