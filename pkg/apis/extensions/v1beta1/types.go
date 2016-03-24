@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+		http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -1047,54 +1047,54 @@ type PodSecurityPolicyList struct {
  * specified nodes, and other combinations.
  */
 type Migration struct {
-  unversioned.TypeMeta `json:",inline"`
-  v1.ObjectMeta `json:"metadata,omitempty"`
+	unversioned.TypeMeta `json:",inline"`
+	v1.ObjectMeta `json:"metadata,omitempty"`
 
-  Spec MigrationSpec `json:"spec,omitempty"`
-  Status MigrationStatus `json:"status,omitempty"`
+	Spec MigrationSpec `json:"spec,omitempty"`
+	Status MigrationStatus `json:"status,omitempty"`
 }
 
 type MigrationList struct {
-  unversioned.TypeMeta `json:",inline"`
-  // Standard list metadata
-  // More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata
-  unversioned.ListMeta `json:"metadata,omitempty"`
+	unversioned.TypeMeta `json:",inline"`
+	// Standard list metadata
+	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata
+	unversioned.ListMeta `json:"metadata,omitempty"`
 
-  // Items is the list of Job.
-  Items []Migration `json:"items"`
+	// Items is the list of Job.
+	Items []Migration `json:"items"`
 }
 
 // temporary spec for prototyping
 type MigrationSpec struct {
-  PodName string `json:"podName,omitempty"`
-  DestNodeName string `json:"destNodeName,omitempty"`
+	PodName string `json:"podName,omitempty"`
+	DestNodeName string `json:"destNodeName,omitempty"`
 }
 
 // A status update of the migration, updated by the migration controller.
 // Currently only contains the phase info. This can be used by the
 // client to check on the
 type MigrationStatus struct {
-  Phase MigrationPhase `json:"phase,omitempty"`
+	Phase MigrationPhase `json:"phase,omitempty"`
 }
 
 // The migration phase indicates the progress of migration.
 type MigrationPhase string
 
 const (
-  // Migration is registered into the system but not started.
-  MigrationPending MigrationPhase = "Pending"
-  // Migration task has been started by the MigrationController
-  MigrationStarted MigrationPhase = "Started"
-  // Checkpointing of the source pod is complete. The source pod's
-  // node has exposed a HTTP route to download the images.
-  MigrationCheckpointed MigrationPhase = "Checkpointed"
-  // Pod clone on the destination pod has been created and restored from
-  // the checkpointed state.
-  MigrationRestored MigrationPhase = "Restored"
-  // Migration is complete. The source pod has been marked for deletion/evicted
-  // from the source node.
-  MigrationComplete MigrationPhase = "Complete"
-  // Migration was aborted - we don't need to worry about this for the time being.
-  // When we implement this, some error info should be included too.
-  MigrationFailed MigrationPhase = "Failed"
+	// Migration is registered into the system but not started.
+	MigrationPending MigrationPhase = "Pending"
+	// Migration task has been started by the MigrationController
+	MigrationStarted MigrationPhase = "Started"
+	// Checkpointing of the source pod is complete. The source pod's
+	// node has exposed a HTTP route to download the images.
+	MigrationCheckpointed MigrationPhase = "Checkpointed"
+	// Pod clone on the destination pod has been created and restored from
+	// the checkpointed state.
+	MigrationRestored MigrationPhase = "Restored"
+	// Migration is complete. The source pod has been marked for deletion/evicted
+	// from the source node.
+	MigrationComplete MigrationPhase = "Complete"
+	// Migration was aborted - we don't need to worry about this for the time being.
+	// When we implement this, some error info should be included too.
+	MigrationFailed MigrationPhase = "Failed"
 )
