@@ -32,7 +32,7 @@ import (
 	"time"
 
 	"github.com/coreos/go-semver/semver"
-	docker "github.com/fsouza/go-dockerclient"
+	docker "github.com/tyangliu/go-dockerclient"
 	"github.com/golang/glog"
 	cadvisorapi "github.com/google/cadvisor/info/v1"
 	"k8s.io/kubernetes/pkg/api"
@@ -208,7 +208,7 @@ func NewDockerManager(
 		glog.Errorf("Failed to execute Info() call to the Docker client: %v", err)
 		glog.Warningf("Using fallback default of /var/lib/docker for location of Docker runtime")
 	} else {
-		dockerRoot = dockerInfo.Get("DockerRootDir")
+		dockerRoot = dockerInfo.DockerRootDir
 		glog.Infof("Setting dockerRoot to %s", dockerRoot)
 	}
 

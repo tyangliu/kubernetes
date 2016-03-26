@@ -29,7 +29,7 @@ import (
 	"testing"
 	"time"
 
-	docker "github.com/fsouza/go-dockerclient"
+	docker "github.com/tyangliu/go-dockerclient"
 	cadvisorapi "github.com/google/cadvisor/info/v1"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/kubernetes/pkg/api"

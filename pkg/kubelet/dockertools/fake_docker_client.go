@@ -26,7 +26,7 @@ import (
 	"sync"
 	"time"
 
-	docker "github.com/fsouza/go-dockerclient"
+	docker "github.com/tyangliu/go-dockerclient"
 
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/util/sets"
@@ -49,7 +49,7 @@ type FakeDockerClient struct {
 	Removed       []string
 	RemovedImages sets.String
 	VersionInfo   docker.Env
-	Information   docker.Env
+	Information   docker.DockerInfo
 	ExecInspect   *docker.ExecInspect
 	execCmd       []string
 	EnableSleep   bool
@@ -405,7 +405,7 @@ func (f *FakeDockerClient) Version() (*docker.Env, error) {
 	return &f.VersionInfo, f.popError("version")
 }
 
-func (f *FakeDockerClient) Info() (*docker.Env, error) {
+func (f *FakeDockerClient) Info() (*docker.DockerInfo, error) {
 	return &f.Information, nil
 }
 
@@ -428,6 +428,20 @@ func (f *FakeDockerClient) AttachToContainer(opts docker.AttachToContainerOption
 	f.Lock()
 	defer f.Unlock()
 	f.called = append(f.called, "attach")
+	return nil
+}
+
+func (f *FakeDockerClient) CheckpointContainer(opts docker.CheckpointContainerOptions) error {
+	f.Lock()
+	defer f.Unlock()
+	f.called = append(f.called, "checkpoint")
+	return nil
+}
+
+func (f *FakeDockerClient) RestoreContainer(opts docker.RestoreContainerOptions) error {
+	f.Lock()
+	defer f.Unlock()
+	f.called = append(f.called, "restore")
 	return nil
 }
 

@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"runtime"
 
-	docker "github.com/fsouza/go-dockerclient"
+	docker "github.com/tyangliu/go-dockerclient"
 
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/client/record"

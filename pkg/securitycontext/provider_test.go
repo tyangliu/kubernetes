@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"testing"
 
-	docker "github.com/fsouza/go-dockerclient"
+	docker "github.com/tyangliu/go-dockerclient"
 	"k8s.io/kubernetes/pkg/api"
 	apitesting "k8s.io/kubernetes/pkg/api/testing"
 )

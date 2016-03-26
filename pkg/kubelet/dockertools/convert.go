@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	docker "github.com/fsouza/go-dockerclient"
+	docker "github.com/tyangliu/go-dockerclient"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 )
 

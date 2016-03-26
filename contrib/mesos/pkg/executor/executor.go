@@ -28,7 +28,7 @@ import (
 
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 
-	"github.com/fsouza/go-dockerclient"
+	"github.com/tyangliu/go-dockerclient"
 	"github.com/gogo/protobuf/proto"
 	log "github.com/golang/glog"
 	bindings "github.com/mesos/mesos-go/executor"

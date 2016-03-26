@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	docker "github.com/fsouza/go-dockerclient"
+	docker "github.com/tyangliu/go-dockerclient"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/kubernetes/pkg/api"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"

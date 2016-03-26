@@ -24,7 +24,7 @@ import (
 	"sort"
 	"strings"
 
-	docker "github.com/fsouza/go-dockerclient"
+	docker "github.com/tyangliu/go-dockerclient"
 	"github.com/golang/glog"
 
 	"k8s.io/kubernetes/pkg/api"

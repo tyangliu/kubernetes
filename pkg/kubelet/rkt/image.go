@@ -28,7 +28,7 @@ import (
 
 	appcschema "github.com/appc/spec/schema"
 	rktapi "github.com/coreos/rkt/api/v1alpha"
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/tyangliu/go-dockerclient"
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
 	"k8s.io/kubernetes/pkg/api"

@@ -27,7 +27,7 @@ import (
 	"testing"
 
 	"github.com/docker/docker/pkg/jsonmessage"
-	docker "github.com/fsouza/go-dockerclient"
+	docker "github.com/tyangliu/go-dockerclient"
 	cadvisorapi "github.com/google/cadvisor/info/v1"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/client/record"

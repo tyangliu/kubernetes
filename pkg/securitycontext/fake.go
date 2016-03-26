@@ -19,7 +19,7 @@ package securitycontext
 import (
 	"k8s.io/kubernetes/pkg/api"
 
-	docker "github.com/fsouza/go-dockerclient"
+	docker "github.com/tyangliu/go-dockerclient"
 )
 
 // ValidSecurityContextWithContainerDefaults creates a valid security context provider based on
