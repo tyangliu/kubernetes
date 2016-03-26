@@ -1,6 +1,7 @@
 {
 	"ImportPath": "k8s.io/kubernetes",
 	"GoVersion": "go1.5",
+	"GodepVersion": "v60",
 	"Packages": [
 		"./..."
 	],
@@ -931,6 +932,10 @@
 		{
 			"ImportPath": "github.com/syndtr/gocapability/capability",
 			"Rev": "2c00daeb6c3b45114c80ac44119e7b8801fdd852"
+		},
+		{
+			"ImportPath": "github.com/tyangliu/go-dockerclient",
+			"Rev": "f475e0b0b74d5ed36fba402990a3165572330a0e"
 		},
 		{
 			"ImportPath": "github.com/ugorji/go/codec",
