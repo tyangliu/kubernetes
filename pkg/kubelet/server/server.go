@@ -314,6 +314,34 @@ func (s *Server) InstallDebuggingHandlers() {
 
 	ws = new(restful.WebService)
 	ws.
+		Path("/checkpoint")
+	// The GET checkpoint route is used to download container checkpoint
+	// images for the particular pod, once checkpoint is complete. Returns
+	// Not Found if image does not exist yet.
+	ws.Route(ws.GET("/{podNamespace}/{podID}").
+		To(s.getCheckpoint).
+		Operation("getCheckpoint"))
+	// The POST checkpoint route is used to signal the node to perform a
+	// checkpoint of a pod.
+	ws.Route(ws.POST("/{podNamespace}/{podID}").
+		To(s.postCheckpoint).
+		Operation("postCheckpoint"))
+	s.restfulCont.Add(ws)
+
+	ws = new(restful.WebService)
+	ws.
+		Path("/restore")
+	// The POST restore route is used to signal the node to perform a
+	// restore of a pod. The pod must have already been staged
+	// (created but not ran) and a path to download checkpoint images
+	// must be provided in the request.
+	ws.Route(ws.POST("/{podNamespace}/{podID}").
+		To(s.postRestore).
+		Operation("postRestore"))
+	s.restfulCont.Add(ws)
+
+	ws = new(restful.WebService)
+	ws.
 		Path("/logs/")
 	ws.Route(ws.GET("").
 		To(s.getLogs).
@@ -544,6 +572,39 @@ const defaultStreamCreationTimeout = 30 * time.Second
 
 type Closer interface {
 	Close() error
+}
+
+func (s *Server) getCheckpoint(request *restful.Request, response *restful.Response) {
+	podNamespace, podID, uid := getPodCoordinates(request)
+	pod, ok := s.host.GetPodByName(podNamespace, podID)
+	if !ok {
+		response.WriteError(http.StatusNotFound, fmt.Errorf("pod does not exist"))
+		return
+	}
+
+	fmt.Println(uid, pod)
+}
+
+func (s *Server) postCheckpoint(request *restful.Request, response *restful.Response) {
+	podNamespace, podID, uid := getPodCoordinates(request)
+	pod, ok := s.host.GetPodByName(podNamespace, podID)
+	if !ok {
+		response.WriteError(http.StatusNotFound, fmt.Errorf("pod does not exist"))
+		return
+	}
+
+	fmt.Println(uid, pod)
+}
+
+func (s *Server) postRestore(request *restful.Request, response *restful.Response) {
+	podNamespace, podID, uid := getPodCoordinates(request)
+	pod, ok := s.host.GetPodByName(podNamespace, podID)
+	if !ok {
+		response.WriteError(http.StatusNotFound, fmt.Errorf("pod does not exist"))
+		return
+	}
+
+	fmt.Println(uid, pod)
 }
 
 func (s *Server) getAttach(request *restful.Request, response *restful.Response) {
