@@ -1490,6 +1490,12 @@ type PodSpec struct {
 	// in the case of docker, only DockerConfig type secrets are honored.
 	// More info: http://releases.k8s.io/HEAD/docs/user-guide/images.md#specifying-imagepullsecrets-on-a-pod
 	ImagePullSecrets []LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
+	// DeferRun, if true, means the pod containers will be created but not run.
+	// This is currently used so we can stage a pod as the checkpoint/restore
+	// destination, and allow us to pull any required images before actually
+	// checkpointing and halting the source pod, so as to reduce downtime.
+	// Optional: Defaults to false.
+	DeferRun bool `json:"deferRun,omitempty"`
 }
 
 // PodSecurityContext holds pod-level security attributes and common container settings.

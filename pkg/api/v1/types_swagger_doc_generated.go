@@ -1175,6 +1175,7 @@ var map_PodSpec = map[string]string{
 	"hostIPC":                       "Use the host's ipc namespace. Optional: Default to false.",
 	"securityContext":               "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.",
 	"imagePullSecrets":              "ImagePullSecrets is an optional list of references to secrets in the same namespace to use for pulling any of the images used by this PodSpec. If specified, these secrets will be passed to individual puller implementations for them to use. For example, in the case of docker, only DockerConfig type secrets are honored. More info: http://releases.k8s.io/HEAD/docs/user-guide/images.md#specifying-imagepullsecrets-on-a-pod",
+	"deferRun":                      "DeferRun, if true, means the pod containers will be created but not run. This is currently used so we can stage a pod as the checkpoint/restore destination, and allow us to pull any required images before actually checkpointing and halting the source pod, so as to reduce downtime. Optional: Defaults to false.",
 }
 
 func (PodSpec) SwaggerDoc() map[string]string {

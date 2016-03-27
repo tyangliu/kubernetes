@@ -447,6 +447,39 @@ func (ListOptions) SwaggerDoc() map[string]string {
 	return map_ListOptions
 }
 
+var map_Migration = map[string]string{
+	"": "\n * The Migration object represents one instance of a migration.\n * Its spec currently denotes a singular pod name to migrate and a\n * singular destination node, for prototyping. Real use case likely\n * involves migrating all pods off a node, migrating to non-explicitly\n * specified nodes, and other combinations.",
+}
+
+func (Migration) SwaggerDoc() map[string]string {
+	return map_Migration
+}
+
+var map_MigrationList = map[string]string{
+	"metadata": "Standard list metadata More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata",
+	"items":    "Items is the list of Job.",
+}
+
+func (MigrationList) SwaggerDoc() map[string]string {
+	return map_MigrationList
+}
+
+var map_MigrationSpec = map[string]string{
+	"": "temporary spec for prototyping",
+}
+
+func (MigrationSpec) SwaggerDoc() map[string]string {
+	return map_MigrationSpec
+}
+
+var map_MigrationStatus = map[string]string{
+	"": "A status update of the migration, updated by the migration controller. Currently only contains the phase info. This can be used by the client to check on the",
+}
+
+func (MigrationStatus) SwaggerDoc() map[string]string {
+	return map_MigrationStatus
+}
+
 var map_PodSecurityPolicy = map[string]string{
 	"":         "Pod Security Policy governs the ability to make requests that affect the Security Context that will be applied to a pod and container.",
 	"metadata": "Standard object's metadata. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata",

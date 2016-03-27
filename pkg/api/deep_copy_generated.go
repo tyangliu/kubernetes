@@ -2172,6 +2172,7 @@ func DeepCopy_api_PodSpec(in PodSpec, out *PodSpec, c *conversion.Cloner) error 
 	} else {
 		out.ImagePullSecrets = nil
 	}
+	out.DeferRun = in.DeferRun
 	return nil
 }
 

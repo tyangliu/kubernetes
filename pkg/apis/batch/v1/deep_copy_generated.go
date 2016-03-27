@@ -677,6 +677,7 @@ func deepCopy_v1_PodSpec(in v1.PodSpec, out *v1.PodSpec, c *conversion.Cloner) e
 	} else {
 		out.ImagePullSecrets = nil
 	}
+	out.DeferRun = in.DeferRun
 	return nil
 }
 

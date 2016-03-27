@@ -1225,6 +1225,12 @@ type PodSpec struct {
 	// If specified, these secrets will be passed to individual puller implementations for them to use.  For example,
 	// in the case of docker, only DockerConfig type secrets are honored.
 	ImagePullSecrets []LocalObjectReference `json:"imagePullSecrets,omitempty"`
+	// DeferRun, if true, means the pod containers will be created but not run.
+	// This is currently used so we can stage a pod as the checkpoint/restore
+	// destination, and allow us to pull any required images before actually
+	// checkpointing and halting the source pod, so as to reduce downtime.
+	// Optional: Defaults to false.
+	DeferRun bool `json:"deferRun,omitempty"`
 }
 
 // PodSecurityContext holds pod-level security attributes and common container settings.
