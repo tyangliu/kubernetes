@@ -28,7 +28,7 @@ type MigrationController struct {
 	kubeClient clientset.Interface
 	podControl controller.PodControlInterface
 
-	updateHandler func(m *extensions.Migration) error
+	updateHandler func(m *extensions.Migration) (*extensions.Migration, error)
 	syncHandler   func(mKey string) error
 
 	podStoreSynced func() bool
@@ -165,6 +165,21 @@ func (mc *MigrationController) worker() {
 	}
 }
 
+func (mc *MigrationController) getMigration(key string) (*extensions.Migration, error) {
+	obj, exists, err := mc.migrationStore.Store.GetByKey(key)
+	if err != nil {
+		glog.Infof("Unable to retrieve migration %v from store: %v", key, err)
+		mc.queue.Add(key)
+		return nil, err
+	}
+	if !exists {
+		glog.Infof("Migration has been deleted %v", key)
+		return nil, nil
+	}
+
+	return obj.(*extensions.Migration), nil
+}
+
 func (mc *MigrationController) syncMigration(key string) error {
 	startTime := time.Now()
 	defer func() {
@@ -178,31 +193,30 @@ func (mc *MigrationController) syncMigration(key string) error {
 		return nil
 	}
 
-	obj, exists, err := mc.migrationStore.Store.GetByKey(key)
-	if err != nil {
-		glog.Infof("Unable to retrieve migration %v from store: %v", key, err)
-		mc.queue.Add(key)
-		return err
-	}
-	if !exists {
-		glog.Infof("Migration has been deleted %v", key)
-		return nil
-	}
-
-	m := obj.(*extensions.Migration)
+	m, err := mc.getMigration(key)
 
 	// Update the migration status to Started
 	m.Status.Phase = extensions.MigrationStarted
-	if err := mc.updateHandler(m); err != nil {
+	if m, err = mc.updateHandler(m); err != nil {
 		return err
 	}
 
 	// Attempt to get the pod with the pod name specified in the migration spec.
+	pod, err := mc.kubeClient.Core().Pods(m.Namespace).Get(m.Spec.PodName)
+	if err != nil {
+		return err
+	}
+
+	// Set should checkpoint flag to true
+	pod.Spec.ShouldCheckpoint = true
+	pod, err = mc.kubeClient.Core().Pods(m.Namespace).Update(pod)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func (mc *MigrationController) updateMigrationStatus(m *extensions.Migration) error {
-	_, err := mc.kubeClient.Extensions().Migrations(m.Namespace).UpdateStatus(m)
-	return err
+func (mc *MigrationController) updateMigrationStatus(m *extensions.Migration) (*extensions.Migration, error) {
+	return mc.kubeClient.Extensions().Migrations(m.Namespace).UpdateStatus(m)
 }

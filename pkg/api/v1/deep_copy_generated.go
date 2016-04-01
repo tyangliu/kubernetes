@@ -1815,6 +1815,7 @@ func deepCopy_v1_PodSpec(in PodSpec, out *PodSpec, c *conversion.Cloner) error {
 		out.ImagePullSecrets = nil
 	}
 	out.DeferRun = in.DeferRun
+	out.ShouldCheckpoint = in.ShouldCheckpoint
 	return nil
 }
 

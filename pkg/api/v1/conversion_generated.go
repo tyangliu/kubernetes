@@ -2329,6 +2329,7 @@ func autoConvert_api_PodSpec_To_v1_PodSpec(in *api.PodSpec, out *PodSpec, s conv
 		out.ImagePullSecrets = nil
 	}
 	out.DeferRun = in.DeferRun
+	out.ShouldCheckpoint = in.ShouldCheckpoint
 	return nil
 }
 
@@ -5571,6 +5572,7 @@ func autoConvert_v1_PodSpec_To_api_PodSpec(in *PodSpec, out *api.PodSpec, s conv
 		out.ImagePullSecrets = nil
 	}
 	out.DeferRun = in.DeferRun
+	out.ShouldCheckpoint = in.ShouldCheckpoint
 	return nil
 }
 

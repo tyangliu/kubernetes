@@ -980,6 +980,7 @@ type MigrationSpec struct {
 // client to check on the
 type MigrationStatus struct {
 	Phase MigrationPhase `json:"phase,omitempty"`
+	DebugMessage string `json:"debugMessage,omitempty"`
 }
 
 // The migration phase indicates the progress of migration.

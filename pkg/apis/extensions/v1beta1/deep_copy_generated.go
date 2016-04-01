@@ -698,6 +698,7 @@ func deepCopy_v1_PodSpec(in v1.PodSpec, out *v1.PodSpec, c *conversion.Cloner) e
 		out.ImagePullSecrets = nil
 	}
 	out.DeferRun = in.DeferRun
+	out.ShouldCheckpoint = in.ShouldCheckpoint
 	return nil
 }
 
@@ -1659,6 +1660,7 @@ func deepCopy_v1beta1_MigrationSpec(in MigrationSpec, out *MigrationSpec, c *con
 
 func deepCopy_v1beta1_MigrationStatus(in MigrationStatus, out *MigrationStatus, c *conversion.Cloner) error {
 	out.Phase = in.Phase
+	out.DebugMessage = in.DebugMessage
 	return nil
 }
 

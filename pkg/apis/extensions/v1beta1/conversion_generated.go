@@ -912,6 +912,7 @@ func autoConvert_api_PodSpec_To_v1_PodSpec(in *api.PodSpec, out *v1.PodSpec, s c
 		out.ImagePullSecrets = nil
 	}
 	out.DeferRun = in.DeferRun
+	out.ShouldCheckpoint = in.ShouldCheckpoint
 	return nil
 }
 
@@ -2249,6 +2250,7 @@ func autoConvert_v1_PodSpec_To_api_PodSpec(in *v1.PodSpec, out *api.PodSpec, s c
 		out.ImagePullSecrets = nil
 	}
 	out.DeferRun = in.DeferRun
+	out.ShouldCheckpoint = in.ShouldCheckpoint
 	return nil
 }
 
@@ -3509,6 +3511,7 @@ func autoConvert_extensions_MigrationStatus_To_v1beta1_MigrationStatus(in *exten
 		defaulting.(func(*extensions.MigrationStatus))(in)
 	}
 	out.Phase = MigrationPhase(in.Phase)
+	out.DebugMessage = in.DebugMessage
 	return nil
 }
 
@@ -4830,6 +4833,7 @@ func autoConvert_v1beta1_MigrationStatus_To_extensions_MigrationStatus(in *Migra
 		defaulting.(func(*MigrationStatus))(in)
 	}
 	out.Phase = extensions.MigrationPhase(in.Phase)
+	out.DebugMessage = in.DebugMessage
 	return nil
 }
 
