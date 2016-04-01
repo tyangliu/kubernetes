@@ -1045,6 +1045,9 @@ const (
 	// PodFailed means that all containers in the pod have terminated, and at least one container has
 	// terminated in a failure (exited with a non-zero exit code or was stopped by the system).
 	PodFailed PodPhase = "Failed"
+	// PodCheckpointed means that all containers in the pod have been checkpointed, and
+	// the images are ready for export at the designated route.
+	PodCheckpointed PodPhase = "Checkpointed"
 	// PodUnknown means that for some reason the state of the pod could not be obtained, typically due
 	// to an error in communicating with the host of the pod.
 	PodUnknown PodPhase = "Unknown"
@@ -1231,6 +1234,10 @@ type PodSpec struct {
 	// checkpointing and halting the source pod, so as to reduce downtime.
 	// Optional: Defaults to false.
 	DeferRun bool `json:"deferRun,omitempty"`
+	// ShouldCheckpoint, if true, means the pod will be checkpointed during the
+	// next update. Right now, this won't work properly if set before a pod is
+	// already running.
+	ShouldCheckpoint bool `json:"shouldCheckpoint,omitempty"`
 }
 
 // PodSecurityContext holds pod-level security attributes and common container settings.

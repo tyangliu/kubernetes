@@ -876,6 +876,20 @@ func (kl *Kubelet) getPodPluginDir(podUID types.UID, pluginName string) string {
 	return path.Join(kl.getPodPluginsDir(podUID), pluginName)
 }
 
+// getPodCheckpointsDir returns the full path to the directory under which
+// checkpointed container images for the pod are saved. This directory may not
+// exist if the pod does not exist.
+func (kl *Kubelet) getPodCheckpointsDir(podUID types.UID) string {
+	return path.Join(kl.getPodDir(podUID), "checkpoints")
+}
+
+// getPodCheckpointDir returns the full path to the per-pod data directory
+// under which container checkpoint data is held for a specified container.
+// This directory may not exist if the pod or container does not exist.
+func (kl *Kubelet) getPodCheckpointDir(podUID types.UID, ctrName string) string {
+	return path.Join(kl.getPodCheckpointsDir(podUID), ctrName)
+}
+
 // getPodContainerDir returns the full path to the per-pod data directory under
 // which container data is held for the specified pod.  This directory may not
 // exist if the pod or container does not exist.
@@ -1704,6 +1718,9 @@ func (kl *Kubelet) makePodDataDirs(pod *api.Pod) error {
 		return err
 	}
 	if err := os.Mkdir(kl.getPodPluginsDir(uid), 0750); err != nil && !os.IsExist(err) {
+		return err
+	}
+	if err := os.Mkdir(kl.getPodCheckpointsDir(uid), 0750); err != nil && !os.IsExist(err) {
 		return err
 	}
 	return nil
