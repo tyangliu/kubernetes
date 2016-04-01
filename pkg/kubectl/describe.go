@@ -510,6 +510,7 @@ func describePod(pod *api.Pod, events *api.EventList) (string, error) {
 		if len(pod.Status.Message) > 0 {
 			fmt.Fprintf(out, "Message:\t%s\n", pod.Status.Message)
 		}
+		fmt.Fprintf(out, "Spec Dump:\t%+v\n", pod.Spec)
 		fmt.Fprintf(out, "IP:\t%s\n", pod.Status.PodIP)
 		fmt.Fprintf(out, "Controllers:\t%s\n", printControllers(pod.Annotations))
 		fmt.Fprintf(out, "Containers:\n")
