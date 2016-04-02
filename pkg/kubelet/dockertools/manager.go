@@ -354,8 +354,15 @@ func (dm *DockerManager) inspectContainer(id string, podName, podNamespace strin
 		return &status, ip, nil
 	}
 
+	if iResult.State.Checkpointed {
+		// Container is Checkpointed
+		status.State = kubecontainer.ContainerStateCheckpointed
+		status.CheckpointedAt = iResult.State.CheckpointedAt
+		return &status, "", nil
+	}
+
 	// Find containers that have exited or failed to start.
-	if !iResult.State.FinishedAt.IsZero() || iResult.State.ExitCode != 0 {
+	if !iResult.State.FinishedAt.IsZero() || iResult.State.ExitCode != 0 && !iResult.State.Checkpointed {
 		// Containers that are exited, dead or created (docker failed to start container)
 		// When a container fails to start State.ExitCode is non-zero, FinishedAt and StartedAt are both zero
 		reason := ""

@@ -3313,6 +3313,10 @@ func (kl *Kubelet) convertStatusToAPIStatus(pod *api.Pod, podStatus *kubecontain
 				FinishedAt:  unversioned.NewTime(cs.FinishedAt),
 				ContainerID: cid,
 			}
+		case kubecontainer.ContainerStateCheckpointed:
+			status.State.Checkpointed = &api.ContainerStateCheckpointed{
+				/* TODO */
+			}
 		default:
 			status.State.Waiting = &api.ContainerStateWaiting{}
 		}

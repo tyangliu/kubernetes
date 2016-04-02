@@ -203,10 +203,11 @@ func (id DockerID) ContainerID() ContainerID {
 type ContainerState string
 
 const (
-	ContainerStateRunning ContainerState = "running"
-	ContainerStateExited  ContainerState = "exited"
+	ContainerStateRunning      ContainerState = "running"
+	ContainerStateCheckpointed ContainerState = "checkpointed"
+	ContainerStateExited       ContainerState = "exited"
 	// This unknown encompasses all the states that we currently don't care.
-	ContainerStateUnknown ContainerState = "unknown"
+	ContainerStateUnknown      ContainerState = "unknown"
 )
 
 // Container provides the runtime information for a container, such as ID, hash,
@@ -254,11 +255,13 @@ type ContainerStatus struct {
 	// Status of the container.
 	State ContainerState
 	// Creation time of the container.
-	CreatedAt time.Time
+	CreatedAt      time.Time
 	// Start time of the container.
-	StartedAt time.Time
+	StartedAt      time.Time
 	// Finish time of the container.
-	FinishedAt time.Time
+	FinishedAt     time.Time
+	// Checkpointed time of the container.
+	CheckpointedAt time.Time
 	// Exit code of the container.
 	ExitCode int
 	// Name of the image.
