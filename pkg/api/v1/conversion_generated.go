@@ -466,11 +466,34 @@ func autoConvert_api_ContainerState_To_v1_ContainerState(in *api.ContainerState,
 	} else {
 		out.Terminated = nil
 	}
+	// unable to generate simple pointer conversion for api.ContainerStateCheckpointed -> v1.ContainerStateCheckpointed
+	if in.Checkpointed != nil {
+		out.Checkpointed = new(ContainerStateCheckpointed)
+		if err := Convert_api_ContainerStateCheckpointed_To_v1_ContainerStateCheckpointed(in.Checkpointed, out.Checkpointed, s); err != nil {
+			return err
+		}
+	} else {
+		out.Checkpointed = nil
+	}
 	return nil
 }
 
 func Convert_api_ContainerState_To_v1_ContainerState(in *api.ContainerState, out *ContainerState, s conversion.Scope) error {
 	return autoConvert_api_ContainerState_To_v1_ContainerState(in, out, s)
+}
+
+func autoConvert_api_ContainerStateCheckpointed_To_v1_ContainerStateCheckpointed(in *api.ContainerStateCheckpointed, out *ContainerStateCheckpointed, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*api.ContainerStateCheckpointed))(in)
+	}
+	if err := api.Convert_unversioned_Time_To_unversioned_Time(&in.CheckpointedAt, &out.CheckpointedAt, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+func Convert_api_ContainerStateCheckpointed_To_v1_ContainerStateCheckpointed(in *api.ContainerStateCheckpointed, out *ContainerStateCheckpointed, s conversion.Scope) error {
+	return autoConvert_api_ContainerStateCheckpointed_To_v1_ContainerStateCheckpointed(in, out, s)
 }
 
 func autoConvert_api_ContainerStateRunning_To_v1_ContainerStateRunning(in *api.ContainerStateRunning, out *ContainerStateRunning, s conversion.Scope) error {
@@ -3773,11 +3796,34 @@ func autoConvert_v1_ContainerState_To_api_ContainerState(in *ContainerState, out
 	} else {
 		out.Terminated = nil
 	}
+	// unable to generate simple pointer conversion for v1.ContainerStateCheckpointed -> api.ContainerStateCheckpointed
+	if in.Checkpointed != nil {
+		out.Checkpointed = new(api.ContainerStateCheckpointed)
+		if err := Convert_v1_ContainerStateCheckpointed_To_api_ContainerStateCheckpointed(in.Checkpointed, out.Checkpointed, s); err != nil {
+			return err
+		}
+	} else {
+		out.Checkpointed = nil
+	}
 	return nil
 }
 
 func Convert_v1_ContainerState_To_api_ContainerState(in *ContainerState, out *api.ContainerState, s conversion.Scope) error {
 	return autoConvert_v1_ContainerState_To_api_ContainerState(in, out, s)
+}
+
+func autoConvert_v1_ContainerStateCheckpointed_To_api_ContainerStateCheckpointed(in *ContainerStateCheckpointed, out *api.ContainerStateCheckpointed, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*ContainerStateCheckpointed))(in)
+	}
+	if err := api.Convert_unversioned_Time_To_unversioned_Time(&in.CheckpointedAt, &out.CheckpointedAt, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+func Convert_v1_ContainerStateCheckpointed_To_api_ContainerStateCheckpointed(in *ContainerStateCheckpointed, out *api.ContainerStateCheckpointed, s conversion.Scope) error {
+	return autoConvert_v1_ContainerStateCheckpointed_To_api_ContainerStateCheckpointed(in, out, s)
 }
 
 func autoConvert_v1_ContainerStateRunning_To_api_ContainerStateRunning(in *ContainerStateRunning, out *api.ContainerStateRunning, s conversion.Scope) error {
@@ -6536,6 +6582,7 @@ func init() {
 		autoConvert_api_ConfigMap_To_v1_ConfigMap,
 		autoConvert_api_ContainerImage_To_v1_ContainerImage,
 		autoConvert_api_ContainerPort_To_v1_ContainerPort,
+		autoConvert_api_ContainerStateCheckpointed_To_v1_ContainerStateCheckpointed,
 		autoConvert_api_ContainerStateRunning_To_v1_ContainerStateRunning,
 		autoConvert_api_ContainerStateTerminated_To_v1_ContainerStateTerminated,
 		autoConvert_api_ContainerStateWaiting_To_v1_ContainerStateWaiting,
@@ -6667,6 +6714,7 @@ func init() {
 		autoConvert_v1_ConfigMap_To_api_ConfigMap,
 		autoConvert_v1_ContainerImage_To_api_ContainerImage,
 		autoConvert_v1_ContainerPort_To_api_ContainerPort,
+		autoConvert_v1_ContainerStateCheckpointed_To_api_ContainerStateCheckpointed,
 		autoConvert_v1_ContainerStateRunning_To_api_ContainerStateRunning,
 		autoConvert_v1_ContainerStateTerminated_To_api_ContainerStateTerminated,
 		autoConvert_v1_ContainerStateWaiting_To_api_ContainerStateWaiting,

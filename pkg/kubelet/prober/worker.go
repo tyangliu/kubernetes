@@ -177,7 +177,7 @@ func (w *worker) doProbe() (keepGoing bool) {
 		return true
 	}
 
-	if c.State.Running == nil {
+	if c.State.Running == nil && c.State.Checkpointed == nil {
 		glog.V(3).Infof("Non-running container probed: %v - %v",
 			format.Pod(w.pod), w.container.Name)
 		if !w.containerID.IsEmpty() {

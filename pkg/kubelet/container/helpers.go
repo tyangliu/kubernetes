@@ -57,6 +57,12 @@ func ShouldContainerBeRestarted(container *api.Container, pod *api.Pod, podStatu
 	if status.State == ContainerStateRunning {
 		return false
 	}
+	// Don't restart if container is checkpointed
+	// TODO: modify to check BOTH container checkpointed AND pod should checkpoint
+	// once things are working
+	if status.State == ContainerStateCheckpointed {
+		return false
+	}
 	// Always restart container in unknown state now
 	if status.State == ContainerStateUnknown {
 		return true

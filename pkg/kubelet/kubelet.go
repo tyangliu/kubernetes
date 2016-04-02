@@ -3186,6 +3186,7 @@ func GetPhase(spec *api.PodSpec, info []api.ContainerStatus) api.PodPhase {
 	running := 0
 	waiting := 0
 	stopped := 0
+	checkpointed := 0
 	failed := 0
 	succeeded := 0
 	unknown := 0
@@ -3206,6 +3207,8 @@ func GetPhase(spec *api.PodSpec, info []api.ContainerStatus) api.PodPhase {
 			} else {
 				failed++
 			}
+		case containerStatus.State.Checkpointed != nil:
+			checkpointed++
 		case containerStatus.State.Waiting != nil:
 			if containerStatus.LastTerminationState.Terminated != nil {
 				stopped++
@@ -3226,6 +3229,8 @@ func GetPhase(spec *api.PodSpec, info []api.ContainerStatus) api.PodPhase {
 		// All containers have been started, and at least
 		// one container is running
 		return api.PodRunning
+	case running == 0 && checkpointed > 0 && unknown == 0:
+		return api.PodCheckpointed
 	case running == 0 && stopped > 0 && unknown == 0:
 		// All containers are terminated
 		if spec.RestartPolicy == api.RestartPolicyAlways {
@@ -3315,7 +3320,7 @@ func (kl *Kubelet) convertStatusToAPIStatus(pod *api.Pod, podStatus *kubecontain
 			}
 		case kubecontainer.ContainerStateCheckpointed:
 			status.State.Checkpointed = &api.ContainerStateCheckpointed{
-				/* TODO */
+				CheckpointedAt: unversioned.NewTime(cs.CheckpointedAt),
 			}
 		default:
 			status.State.Waiting = &api.ContainerStateWaiting{}

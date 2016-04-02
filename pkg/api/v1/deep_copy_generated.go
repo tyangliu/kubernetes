@@ -395,6 +395,21 @@ func deepCopy_v1_ContainerState(in ContainerState, out *ContainerState, c *conve
 	} else {
 		out.Terminated = nil
 	}
+	if in.Checkpointed != nil {
+		out.Checkpointed = new(ContainerStateCheckpointed)
+		if err := deepCopy_v1_ContainerStateCheckpointed(*in.Checkpointed, out.Checkpointed, c); err != nil {
+			return err
+		}
+	} else {
+		out.Checkpointed = nil
+	}
+	return nil
+}
+
+func deepCopy_v1_ContainerStateCheckpointed(in ContainerStateCheckpointed, out *ContainerStateCheckpointed, c *conversion.Cloner) error {
+	if err := deepCopy_unversioned_Time(in.CheckpointedAt, &out.CheckpointedAt, c); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -2653,6 +2668,7 @@ func init() {
 		deepCopy_v1_ContainerImage,
 		deepCopy_v1_ContainerPort,
 		deepCopy_v1_ContainerState,
+		deepCopy_v1_ContainerStateCheckpointed,
 		deepCopy_v1_ContainerStateRunning,
 		deepCopy_v1_ContainerStateTerminated,
 		deepCopy_v1_ContainerStateWaiting,

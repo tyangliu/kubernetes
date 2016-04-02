@@ -1217,6 +1217,10 @@ type ContainerStateTerminated struct {
 	ContainerID string `json:"containerID,omitempty"`
 }
 
+type ContainerStateCheckpointed struct {
+	CheckpointedAt unversioned.Time `json:"checkpointedAt,omitempty"`
+}
+
 // ContainerState holds a possible state of container.
 // Only one of its members may be specified.
 // If none of them is specified, the default one is ContainerStateWaiting.
@@ -1227,6 +1231,9 @@ type ContainerState struct {
 	Running *ContainerStateRunning `json:"running,omitempty"`
 	// Details about a terminated container
 	Terminated *ContainerStateTerminated `json:"terminated,omitempty"`
+	// Details about a checkpointed container
+	Checkpointed *ContainerStateCheckpointed `json:"checkpointed,omitempty"`
+
 }
 
 // ContainerStatus contains details for the current status of this container.

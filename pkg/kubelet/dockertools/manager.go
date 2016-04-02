@@ -321,7 +321,7 @@ func (dm *DockerManager) inspectContainer(id string, podName, podNamespace strin
 	if err != nil {
 		return nil, ip, err
 	}
-	glog.V(4).Infof("Container inspect result: %+v", *iResult)
+	glog.Infof("Container inspect result: %+v", *iResult)
 
 	// TODO: Get k8s container name by parsing the docker name. This will be
 	// replaced by checking docker labels eventually.
@@ -1836,6 +1836,10 @@ func (dm *DockerManager) SyncPod(pod *api.Pod, _ api.PodStatus, podStatus *kubec
 					return
 				}
 			}
+		}
+
+		if pod.Spec.ShouldCheckpoint {
+			glog.Infof("Should checkpoint update received.")
 		}
 	}
 
