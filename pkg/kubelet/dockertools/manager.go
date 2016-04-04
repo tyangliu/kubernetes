@@ -1422,6 +1422,72 @@ func (dm *DockerManager) killContainer(containerID kubecontainer.ContainerID, co
 	return err
 }
 
+// TODO: don't duplicate KillContainerInPod
+func (dm *DockerManager) CheckpointContainerInPod(containerID kubecontainer.ContainerID, container *api.Container, pod *api.Pod) error {
+	switch {
+	case containerID.IsEmpty():
+		// Locate the container.
+		pods, err := dm.GetPods(false)
+		if err != nil {
+			return err
+		}
+		targetPod := kubecontainer.Pods(pods).FindPod(kubecontainer.GetPodFullName(pod), pod.UID)
+		targetContainer := targetPod.FindContainerByName(container.Name)
+		if targetContainer == nil {
+			return fmt.Errorf("unable to find container %q in pod %q", container.Name, targetPod.Name)
+		}
+		containerID = targetContainer.ID
+
+	case container == nil || pod == nil:
+		// Read information about the container from labels
+		inspect, err := dm.client.InspectContainer(containerID.ID)
+		if err != nil {
+			return err
+		}
+		storedPod, storedContainer, cerr := containerAndPodFromLabels(inspect)
+		if cerr != nil {
+			glog.Errorf("unable to access pod data from container: %v", err)
+		}
+		if container == nil {
+			container = storedContainer
+		}
+		if pod == nil {
+			pod = storedPod
+		}
+	}
+	return dm.checkpointContainer(containerID, container, pod)
+}
+
+func (dm *DockerManager) checkpointContainer(containerID kubecontainer.ContainerID, container *api.Container, pod *api.Pod) error {
+	ID := containerID.ID
+	name := ID
+	if container != nil {
+		name = fmt.Sprintf("%s %s", name, container.Name)
+	}
+	if pod != nil {
+		name = fmt.Sprintf("%s %s/%s", name, pod.Namespace, pod.Name)
+	}
+
+	opts := docker.CheckpointContainerOptions{
+		ID: ID,
+		ImagesDirectory: dm.runtimeHelper.GetContainerCheckpointDir(pod.UID, container.Name),
+		WorkDirectory: "/tmp",
+		LeaveRunning: false,
+	}
+	err := dm.client.CheckpointContainer(opts)
+	if _, ok := err.(*docker.ContainerNotRunning); ok && err != nil {
+		glog.V(4).Infof("Container %q has already exited", name)
+		return nil
+	}
+	if err == nil {
+		glog.V(2).Infof("Container %q checkpointed", name)
+	} else {
+		glog.V(2).Infof("Container %q checkpoint failed: %v", name, err)
+	}
+
+	return err
+}
+
 var errNoPodOnContainer = fmt.Errorf("no pod information labels on Docker container")
 
 // containerAndPodFromLabels tries to load the appropriate container info off of a Docker container's labels
@@ -1835,11 +1901,26 @@ func (dm *DockerManager) SyncPod(pod *api.Pod, _ api.PodStatus, podStatus *kubec
 					glog.Errorf("Error killing container %q(id=%q) for pod %q: %v", containerStatus.Name, containerStatus.ID, format.Pod(pod), err)
 					return
 				}
+			} else if pod.Spec.ShouldCheckpoint {
+				// Don't checkpoint infra container
+				if containerStatus.Name == PodInfraContainerName {
+					continue
+				}
+				glog.V(3).Infof("Checkpointing container %q(id=%q) for pod %q", containerStatus.Name, containerStatus.ID, format.Pod(pod))
+				var podContainer *api.Container
+				for i, c := range pod.Spec.Containers {
+					if c.Name == containerStatus.Name {
+						podContainer = &pod.Spec.Containers[i]
+						break
+					}
+				}
+				checkpointContainerResult := kubecontainer.NewSyncResult(kubecontainer.CheckpointContainer, containerStatus.Name)
+				result.AddSyncResult(checkpointContainerResult)
+				if err := dm.CheckpointContainerInPod(containerStatus.ID, podContainer, pod); err != nil {
+					checkpointContainerResult.Fail(kubecontainer.ErrCheckpointContainer, err.Error())
+					glog.Errorf("Error checkpointing container %q(id=%q) for pod %q: %v", containerStatus.Name, containerStatus.ID, format.Pod(pod), err)
+				}
 			}
-		}
-
-		if pod.Spec.ShouldCheckpoint {
-			glog.Infof("Should checkpoint update received.")
 		}
 	}
 

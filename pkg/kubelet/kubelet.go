@@ -890,6 +890,11 @@ func (kl *Kubelet) getPodCheckpointDir(podUID types.UID, ctrName string) string 
 	return path.Join(kl.getPodCheckpointsDir(podUID), ctrName)
 }
 
+// Exposing the container checkpoint dir to docker manager
+func (kl *Kubelet) GetContainerCheckpointDir(podUID types.UID, ctrName string) string {
+	return kl.getPodCheckpointDir(podUID, ctrName)
+}
+
 // getPodContainerDir returns the full path to the per-pod data directory under
 // which container data is held for the specified pod.  This directory may not
 // exist if the pod or container does not exist.
@@ -1412,6 +1417,10 @@ func (kl *Kubelet) GenerateRunContainerOptions(pod *api.Pod, container *api.Cont
 		} else {
 			opts.PodContainerDir = p
 		}
+		p = kl.getPodCheckpointDir(pod.UID, container.Name)
+		if err := os.MkdirAll(p, 0750); err != nil {
+			glog.Errorf("Error on creating %q: %v", p, err)
+		}
 	}
 
 	opts.DNS, opts.DNSSearch, err = kl.GetClusterDNS(pod)
@@ -1810,6 +1819,13 @@ func (kl *Kubelet) syncPod(pod *api.Pod, mirrorPod *api.Pod, podStatus *kubecont
 	kl.reasonCache.Update(pod.UID, result)
 	if err = result.Error(); err != nil {
 		return err
+	}
+
+	// Force a status update after checkpoint (is there a better way to do this?)
+	if pod.Spec.ShouldCheckpoint {
+		start := kl.clock.Now()
+		mirrorPod, _ := kl.podManager.GetMirrorPodByPod(pod)
+		kl.dispatchWork(pod, kubetypes.SyncPodUpdate, mirrorPod, start)
 	}
 
 	ingress, egress, err := extractBandwidthResources(pod)
