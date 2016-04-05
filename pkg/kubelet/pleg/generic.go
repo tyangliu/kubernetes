@@ -68,16 +68,19 @@ type GenericPLEG struct {
 type plegContainerState string
 
 const (
-	plegContainerRunning     plegContainerState = "running"
-	plegContainerExited      plegContainerState = "exited"
-	plegContainerUnknown     plegContainerState = "unknown"
-	plegContainerNonExistent plegContainerState = "non-existent"
+	plegContainerRunning      plegContainerState = "running"
+	plegContainerCheckpointed plegContainerState = "checkpointed"
+	plegContainerExited       plegContainerState = "exited"
+	plegContainerUnknown      plegContainerState = "unknown"
+	plegContainerNonExistent  plegContainerState = "non-existent"
 )
 
 func convertState(state kubecontainer.ContainerState) plegContainerState {
 	switch state {
 	case kubecontainer.ContainerStateRunning:
 		return plegContainerRunning
+	case kubecontainer.ContainerStateCheckpointed:
+		return plegContainerCheckpointed
 	case kubecontainer.ContainerStateExited:
 		return plegContainerExited
 	case kubecontainer.ContainerStateUnknown:
@@ -139,6 +142,8 @@ func generateEvent(podID types.UID, cid string, oldState, newState plegContainer
 	switch newState {
 	case plegContainerRunning:
 		return &PodLifecycleEvent{ID: podID, Type: ContainerStarted, Data: cid}
+	case plegContainerCheckpointed:
+		return &PodLifecycleEvent{ID: podID, Type: ContainerCheckpointed, Data: cid}
 	case plegContainerExited:
 		return &PodLifecycleEvent{ID: podID, Type: ContainerDied, Data: cid}
 	case plegContainerUnknown:

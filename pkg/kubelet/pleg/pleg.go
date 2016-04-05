@@ -31,6 +31,7 @@ const (
 	// Do not use the events below because they are disabled in GenericPLEG.
 	ContainerRemoved PodLifeCycleEventType = "ContainerRemoved"
 	ContainerChanged PodLifeCycleEventType = "ContainerChanged"
+	ContainerCheckpointed PodLifeCycleEventType = "ContainerCheckpointed"
 )
 
 // PodLifecycleEvent is an event that reflects the change of the pod state.

@@ -1821,13 +1821,6 @@ func (kl *Kubelet) syncPod(pod *api.Pod, mirrorPod *api.Pod, podStatus *kubecont
 		return err
 	}
 
-	// Force a status update after checkpoint (is there a better way to do this?)
-	if pod.Spec.ShouldCheckpoint {
-		start := kl.clock.Now()
-		mirrorPod, _ := kl.podManager.GetMirrorPodByPod(pod)
-		kl.dispatchWork(pod, kubetypes.SyncPodUpdate, mirrorPod, start)
-	}
-
 	ingress, egress, err := extractBandwidthResources(pod)
 	if err != nil {
 		return err

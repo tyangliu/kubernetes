@@ -634,15 +634,16 @@ func (dm *DockerManager) runContainer(
 		dm.recorder.Eventf(ref, api.EventTypeWarning, kubecontainer.FailedToCreateContainer, "Failed to create docker container with error: %v", err)
 		return kubecontainer.ContainerID{}, err
 	}
-	dm.recorder.Eventf(ref, api.EventTypeNormal, kubecontainer.CreatedContainer, "Created container with docker id %v", utilstrings.ShortenString(dockerContainer.ID, 12))
+	dm.recorder.Eventf(ref, api.EventTypeNormal, kubecontainer.CreatedContainer, "Created container with docker id %v, defer run %t", utilstrings.ShortenString(dockerContainer.ID, 12), pod.Spec.DeferRun)
 
-	if err = dm.client.StartContainer(dockerContainer.ID, nil); err != nil {
-		dm.recorder.Eventf(ref, api.EventTypeWarning, kubecontainer.FailedToStartContainer,
-			"Failed to start container with docker id %v with error: %v", utilstrings.ShortenString(dockerContainer.ID, 12), err)
-		return kubecontainer.ContainerID{}, err
+	if !pod.Spec.DeferRun {
+		if err = dm.client.StartContainer(dockerContainer.ID, nil); err != nil {
+			dm.recorder.Eventf(ref, api.EventTypeWarning, kubecontainer.FailedToStartContainer,
+				"Failed to start container with docker id %v with error: %v", utilstrings.ShortenString(dockerContainer.ID, 12), err)
+			return kubecontainer.ContainerID{}, err
+		}
+		dm.recorder.Eventf(ref, api.EventTypeNormal, kubecontainer.StartedContainer, "Started container with docker id %v", utilstrings.ShortenString(dockerContainer.ID, 12))
 	}
-	dm.recorder.Eventf(ref, api.EventTypeNormal, kubecontainer.StartedContainer, "Started container with docker id %v", utilstrings.ShortenString(dockerContainer.ID, 12))
-
 	return kubecontainer.DockerID(dockerContainer.ID).ContainerID(), nil
 }
 
@@ -1479,8 +1480,17 @@ func (dm *DockerManager) checkpointContainer(containerID kubecontainer.Container
 		glog.V(4).Infof("Container %q has already exited", name)
 		return nil
 	}
+
 	if err == nil {
 		glog.V(2).Infof("Container %q checkpointed", name)
+
+		ref, ok := dm.containerRefManager.GetRef(containerID)
+		if !ok {
+			glog.Warningf("No ref for pod '%q'", name)
+		} else {
+			message := fmt.Sprintf("Checkpointed container with docker id %v", utilstrings.ShortenString(ID, 12))
+			dm.recorder.Event(ref, api.EventTypeNormal, kubecontainer.CheckpointedContainer, message)
+		}
 	} else {
 		glog.V(2).Infof("Container %q checkpoint failed: %v", name, err)
 	}
