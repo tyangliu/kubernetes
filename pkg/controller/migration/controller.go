@@ -12,6 +12,7 @@ import (
 	unversionedcore "k8s.io/kubernetes/pkg/client/typed/generated/core/unversioned"
 	"k8s.io/kubernetes/pkg/controller"
 	"k8s.io/kubernetes/pkg/controller/framework"
+	"k8s.io/kubernetes/pkg/labels"
 	replicationcontroller "k8s.io/kubernetes/pkg/controller/replication"
 	"k8s.io/kubernetes/pkg/runtime"
 	utilruntime "k8s.io/kubernetes/pkg/util/runtime"
@@ -192,6 +193,72 @@ func (mc *MigrationController) getMigration(key string) (*extensions.Migration, 
 	return obj.(*extensions.Migration), nil
 }
 
+// Clones a pod onto the destination node of the migration
+// TODO: handle nil pod argument
+func (mc *MigrationController) clonePod(m *extensions.Migration, pod *api.Pod) (map[string]string, error) {
+	// Copy the pod spec, set DeferRun flag, and create the pod copy on the destination node
+	podSpecClone, err := api.Scheme.DeepCopy(pod.Spec)
+	if err != nil {
+		glog.Errorf("Error copying source pod %s for migration: %v", m.Spec.PodName, err)
+		return nil, err
+	}
+
+	newPodSpec := podSpecClone.(api.PodSpec)
+	newPodSpec.DeferRun = true
+
+	// Clone labels and add one for migration controller discoverability
+	// TODO: make the label key universally unique, so it's near impossible to
+	// clash with existing labels
+	newLabels := make(map[string]string)
+	for k,v := range pod.Labels {
+  	newLabels[k] = v
+	}
+	newLabels["migration-controller"] = m.Name
+
+	// Create clone pod on destination node
+	template := &api.PodTemplateSpec{
+		ObjectMeta: api.ObjectMeta{
+			Labels: newLabels,
+		},
+		Spec: newPodSpec,
+	}
+	if err := mc.podControl.CreatePodsOnNode(m.Spec.DestNodeName, m.Namespace, template, m); err != nil {
+		glog.Errorf("Error creating clone pod on destination node: %v", err)
+		return nil, err
+	}
+	return newLabels, nil
+}
+
+// Clones a pod onto the destination node of the migration, and waits until the
+// cloned pod is retrievable to return the pod
+func (mc *MigrationController) cloneAndGetPod(m *extensions.Migration, pod *api.Pod) (*api.Pod, error) {
+	newLabels, err := mc.clonePod(m, pod)
+	if err != nil {
+		return nil, err
+	}
+
+	var clonedPod *api.Pod
+	// Wait until the clone pod has been created before continuing
+	for {
+		time.Sleep(500 * time.Millisecond)
+		podList, err := mc.podStore.Pods(m.Namespace).List(labels.Set(newLabels).AsSelector())
+		if err != nil {
+			return nil, err
+		}
+
+		if len(podList.Items) == 0 {
+			continue
+		} else if len(podList.Items) > 1 {
+			glog.Errorf("More than 1 pod cloned for migration")
+		}
+
+		clonedPod = &podList.Items[0]
+		break
+	}
+
+	return clonedPod, nil
+}
+
 func (mc *MigrationController) syncMigration(key string) error {
 	startTime := time.Now()
 	defer func() {
@@ -220,24 +287,12 @@ func (mc *MigrationController) syncMigration(key string) error {
 		return err
 	}
 
-	// Copy the pod spec, set DeferRun flag, and create the pod copy on the destination node
-	podSpecClone, err := api.Scheme.DeepCopy(pod.Spec)
+	clonePod, err := mc.cloneAndGetPod(m, pod)
 	if err != nil {
-		glog.Errorf("Error copying source pod %s for migration: %v", m.Spec.PodName, err)
+		glog.Errorf("Error cloning pod %s: %v", m.Spec.PodName, err)
 		return err
 	}
-
-	newPodSpec := podSpecClone.(api.PodSpec)
-	newPodSpec.DeferRun = true
-
-	template := &api.PodTemplateSpec{
-		ObjectMeta: api.ObjectMeta{
-			Labels: pod.ObjectMeta.Labels,
-		},
-		Spec: newPodSpec,
-	}
-
-	err = mc.podControl.CreatePodsOnNode(m.Spec.DestNodeName, m.Namespace, template, m)
+	glog.V(4).Infof("Cloned pod: %+v", *clonePod)
 
 	// Set should checkpoint flag to true
 	pod.Spec.ShouldCheckpoint = true
