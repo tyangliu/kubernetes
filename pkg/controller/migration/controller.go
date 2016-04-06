@@ -115,9 +115,21 @@ func (mc *MigrationController) addMigrationNotification(obj interface{}) {
 }
 
 func (mc *MigrationController) updateMigrationNotification(old, cur interface{}) {
-	oldM := old.(*extensions.Migration)
+	oldM, newM := old.(*extensions.Migration), cur.(*extensions.Migration)
+
+	// If a migration has not changed or has no change except within its status,
+	// do not re-enqueue it.
+	mungedM := *newM
+	mungedM.Status = oldM.Status
+	mungedM.ObjectMeta = oldM.ObjectMeta
+
+	if api.Semantic.DeepEqual(mungedM, *oldM) {
+		glog.V(4).Infof("Ignoring unchanged migration update %s", oldM.Name)
+		return
+	}
+
 	glog.V(4).Infof("Updating migration %s", oldM.Name)
-	mc.enqueueMigration(cur.(*extensions.Migration))
+	mc.enqueueMigration(newM)
 }
 
 func (mc *MigrationController) deleteMigrationNotification(obj interface{}) {
@@ -204,8 +216,28 @@ func (mc *MigrationController) syncMigration(key string) error {
 	// Attempt to get the pod with the pod name specified in the migration spec.
 	pod, err := mc.kubeClient.Core().Pods(m.Namespace).Get(m.Spec.PodName)
 	if err != nil {
+		glog.Errorf("Error getting source pod %s for migration: %v", m.Spec.PodName, err)
 		return err
 	}
+
+	// Copy the pod spec, set DeferRun flag, and create the pod copy on the destination node
+	podSpecClone, err := api.Scheme.DeepCopy(pod.Spec)
+	if err != nil {
+		glog.Errorf("Error copying source pod %s for migration: %v", m.Spec.PodName, err)
+		return err
+	}
+
+	newPodSpec := podSpecClone.(api.PodSpec)
+	newPodSpec.DeferRun = true
+
+	template := &api.PodTemplateSpec{
+		ObjectMeta: api.ObjectMeta{
+			Labels: pod.ObjectMeta.Labels,
+		},
+		Spec: newPodSpec,
+	}
+
+	err = mc.podControl.CreatePodsOnNode(m.Spec.DestNodeName, m.Namespace, template, m)
 
 	// Set should checkpoint flag to true
 	pod.Spec.ShouldCheckpoint = true
