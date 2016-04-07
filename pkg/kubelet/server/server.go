@@ -589,8 +589,7 @@ func (s *Server) getCheckpoint(request *restful.Request, response *restful.Respo
 	glog.V(4).Infof("Get Checkpoint: %s, %+v", pod.UID, pod)
 	path := s.host.GetPodCheckpointsDir(pod.UID)
 
-	err := targz.Pack(path, path)
-	if err != nil {
+	if err := targz.Pack(path, path); err != nil {
 		glog.Errorf("Error packing checkpoint images: %v", err)
 	}
 	archivePath := filepath.Join(path, fmt.Sprintf("%s.tar.gz", filepath.Base(path)))
@@ -651,7 +650,9 @@ func (s *Server) postCheckpoint(request *restful.Request, response *restful.Resp
 		return
 	}
 
-	// TODO: unpack the downloaded checkpoints.tar.gz file
+	if err := targz.Unpack(archivePath, path); err != nil {
+		glog.Errorf("Error unpacking checkpoint images: %v", err)
+	}
 }
 
 func (s *Server) postRestore(request *restful.Request, response *restful.Response) {

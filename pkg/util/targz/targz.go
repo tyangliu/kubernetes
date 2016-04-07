@@ -24,11 +24,17 @@ func Pack(srcDir, destDir string) error {
 	return nil
 }
 
-/*
 func Unpack(srcFile, destDir string) error {
+	if err := ungzip(srcFile, destDir); err != nil {
+		return err
+	}
+	tarName := strings.TrimSuffix(filepath.Base(srcFile), filepath.Ext(srcFile))
+	tarPath := filepath.Join(destDir, tarName)
+	if err := untar(tarPath, destDir); err != nil {
+		return err
+	}
 	return nil
 }
-*/
 
 func gzipIt(srcFile, destDir string) error {
 	reader, err := os.Open(srcFile)

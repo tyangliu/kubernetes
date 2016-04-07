@@ -377,6 +377,8 @@ func (mc *MigrationController) syncMigration(key string) error {
 		return err
 	}
 
+	// TODO: Set restore flag on clonePod
+
 	return nil
 }
 
