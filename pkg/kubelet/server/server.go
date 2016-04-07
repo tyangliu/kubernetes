@@ -24,6 +24,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/pprof"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -596,15 +597,61 @@ func (s *Server) getCheckpoint(request *restful.Request, response *restful.Respo
 	http.ServeFile(response.ResponseWriter, request.Request, archivePath)
 }
 
+// TODO: move this to somewhere shared so it's not duplicated in
+// migration controller
+type CheckpointLocation struct {
+	Path string
+}
+
 func (s *Server) postCheckpoint(request *restful.Request, response *restful.Response) {
-	podNamespace, podID, uid := getPodCoordinates(request)
+	podNamespace, podID, _ := getPodCoordinates(request)
 	pod, ok := s.host.GetPodByName(podNamespace, podID)
 	if !ok {
 		response.WriteError(http.StatusNotFound, fmt.Errorf("pod does not exist"))
 		return
 	}
 
-	fmt.Println(uid, pod)
+	glog.V(4).Infof("Post Checkpoint: %s, %+v", pod.UID, pod)
+
+	location := CheckpointLocation{}
+	if err := request.ReadEntity(&location); err != nil {
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	// TODO: validate checkpoint location path
+
+	// Create the checkpoints.tar.gz file
+	path := s.host.GetPodCheckpointsDir(pod.UID)
+	archivePath := filepath.Join(path, fmt.Sprintf("%s.tar.gz", filepath.Base(path)))
+
+	archive, err := os.Create(archivePath)
+	if err != nil {
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	defer archive.Close()
+
+	// Skip certificate check for http request
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+
+	// Download and write the checkpoints.tar.gz file
+	downloadRes, err := client.Get(location.Path)
+	if err != nil {
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	defer downloadRes.Body.Close()
+
+	_, err = io.Copy(archive, downloadRes.Body)
+	if err != nil {
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	// TODO: unpack the downloaded checkpoints.tar.gz file
 }
 
 func (s *Server) postRestore(request *restful.Request, response *restful.Response) {

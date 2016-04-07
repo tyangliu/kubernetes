@@ -1,6 +1,11 @@
 package migration
 
 import (
+	"bytes"
+	"crypto/tls"
+	"encoding/json"
+	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/golang/glog"
@@ -205,6 +210,7 @@ func (mc *MigrationController) clonePod(m *extensions.Migration, pod *api.Pod) (
 
 	newPodSpec := podSpecClone.(api.PodSpec)
 	newPodSpec.DeferRun = true
+	newPodSpec.NodeName = ""
 
 	// Clone labels and add one for migration controller discoverability
 	// TODO: make the label key universally unique, so it's near impossible to
@@ -259,6 +265,10 @@ func (mc *MigrationController) cloneAndGetPod(m *extensions.Migration, pod *api.
 	return clonedPod, nil
 }
 
+type CheckpointLocation struct {
+	Path string
+}
+
 func (mc *MigrationController) syncMigration(key string) error {
 	startTime := time.Now()
 	defer func() {
@@ -298,6 +308,71 @@ func (mc *MigrationController) syncMigration(key string) error {
 	// perform a checkpoint on all containers of the pod.
 	pod.Spec.ShouldCheckpoint = true
 	pod, err = mc.kubeClient.Core().Pods(m.Namespace).Update(pod)
+	if err != nil {
+		return err
+	}
+
+	// Wait until pod phase has been set to Checkpointed by Kubelet, indicating
+	// completion
+	for {
+		time.Sleep(500 * time.Millisecond)
+		pod, err = mc.kubeClient.Core().Pods(m.Namespace).Get(m.Spec.PodName)
+		if err != nil {
+			glog.Errorf("Error getting pod %s after checkpointing: %v", m.Spec.PodName, err)
+			return err
+		}
+		if pod.Status.Phase != api.PodCheckpointed {
+			continue
+		}
+		break
+	}
+
+	// Find the checkpoint image download path for the source pod
+	srcNode, err := mc.kubeClient.Core().Nodes().Get(pod.Spec.NodeName)
+	if err != nil {
+		glog.Errorf("Error getting node for pod %s: %v", m.Spec.PodName, err)
+		return err
+	}
+
+	// TODO: get address from the srcNode below instead?
+	srcNodeAddr := pod.Status.HostIP
+
+	kubeletPort := srcNode.Status.DaemonEndpoints.KubeletEndpoint.Port
+	if kubeletPort == 0 {
+		glog.Errorf("Invalid kubelet daemon port for node %s", srcNode.Name)
+	}
+
+	getPath := fmt.Sprintf("https://%s:%d/checkpoint/%s/%s", srcNodeAddr, kubeletPort, m.Namespace, pod.Name)
+	glog.V(4).Infof("Checkpoint download URL: %s", getPath)
+
+	// Find the checkpoint POST path for the destination pod
+	destNode, err := mc.kubeClient.Core().Nodes().Get(clonePod.Spec.NodeName)
+	if err != nil {
+		glog.Errorf("Error getting node for pod %s: %v", m.Spec.PodName, err)
+		return err
+	}
+
+	destNodeAddr := clonePod.Status.HostIP
+
+	destKubeletPort := destNode.Status.DaemonEndpoints.KubeletEndpoint.Port
+	if destKubeletPort == 0 {
+		glog.Errorf("Invalid kubelet daemon port for node %s", destNode.Name)
+	}
+
+	postPath := fmt.Sprintf("https://%s:%d/checkpoint/%s/%s", destNodeAddr, destKubeletPort, m.Namespace, clonePod.Name)
+
+	json, err := json.Marshal(CheckpointLocation{getPath})
+	if err != nil {
+		return err
+	}
+
+	// Skip certificate check for http request
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+
+	_, err = client.Post(postPath, "application/json", bytes.NewBuffer(json))
 	if err != nil {
 		return err
 	}
