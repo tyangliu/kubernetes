@@ -24,6 +24,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/pprof"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -591,7 +592,8 @@ func (s *Server) getCheckpoint(request *restful.Request, response *restful.Respo
 	if err != nil {
 		glog.Errorf("Error packing checkpoint images: %v", err)
 	}
-	// TODO: write the generated tar file to response
+	archivePath := filepath.Join(path, fmt.Sprintf("%s.tar.gz", filepath.Base(path)))
+	http.ServeFile(response.ResponseWriter, request.Request, archivePath)
 }
 
 func (s *Server) postCheckpoint(request *restful.Request, response *restful.Response) {
