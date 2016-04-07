@@ -636,7 +636,7 @@ func (dm *DockerManager) runContainer(
 	}
 	dm.recorder.Eventf(ref, api.EventTypeNormal, kubecontainer.CreatedContainer, "Created container with docker id %v, defer run %t", utilstrings.ShortenString(dockerContainer.ID, 12), pod.Spec.DeferRun)
 
-	if !pod.Spec.DeferRun {
+	if !pod.Spec.DeferRun || container.Name == PodInfraContainerName {
 		if err = dm.client.StartContainer(dockerContainer.ID, nil); err != nil {
 			dm.recorder.Eventf(ref, api.EventTypeWarning, kubecontainer.FailedToStartContainer,
 				"Failed to start container with docker id %v with error: %v", utilstrings.ShortenString(dockerContainer.ID, 12), err)
@@ -1621,6 +1621,10 @@ func (dm *DockerManager) runContainerInPod(pod *api.Pod, container *api.Containe
 	symlinkFile := LogSymlink(dm.containerLogsDir, kubecontainer.GetPodFullName(pod), container.Name, id.ID)
 	if err = dm.os.Symlink(containerLogFile, symlinkFile); err != nil {
 		glog.Errorf("Failed to create symbolic link to the log file of pod %q container %q: %v", format.Pod(pod), container.Name, err)
+	}
+
+	if container.Name != PodInfraContainerName && pod.Spec.DeferRun {
+		return id, err
 	}
 
 	// Container information is used in adjusting OOM scores and adding ndots.

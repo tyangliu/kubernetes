@@ -58,6 +58,7 @@ import (
 	"k8s.io/kubernetes/pkg/util/httpstream/spdy"
 	"k8s.io/kubernetes/pkg/util/limitwriter"
 	utilruntime "k8s.io/kubernetes/pkg/util/runtime"
+	"k8s.io/kubernetes/pkg/util/targz"
 	"k8s.io/kubernetes/pkg/util/wsstream"
 	"k8s.io/kubernetes/pkg/volume"
 )
@@ -167,6 +168,7 @@ type HostInterface interface {
 	RootFsInfo() (cadvisorapiv2.FsInfo, error)
 	ListVolumesForPod(podUID types.UID) (map[string]volume.Volume, bool)
 	PLEGHealthCheck() (bool, error)
+	GetPodCheckpointsDir(podUID types.UID) string
 }
 
 // NewServer initializes and configures a kubelet.Server object to handle HTTP requests.
@@ -575,14 +577,21 @@ type Closer interface {
 }
 
 func (s *Server) getCheckpoint(request *restful.Request, response *restful.Response) {
-	podNamespace, podID, uid := getPodCoordinates(request)
+	podNamespace, podID, _ := getPodCoordinates(request)
 	pod, ok := s.host.GetPodByName(podNamespace, podID)
 	if !ok {
 		response.WriteError(http.StatusNotFound, fmt.Errorf("pod does not exist"))
 		return
 	}
 
-	fmt.Println(uid, pod)
+	glog.V(4).Infof("Get Checkpoint: %s, %+v", pod.UID, pod)
+	path := s.host.GetPodCheckpointsDir(pod.UID)
+
+	err := targz.Pack(path, path)
+	if err != nil {
+		glog.Errorf("Error packing checkpoint images: %v", err)
+	}
+	// TODO: write the generated tar file to response
 }
 
 func (s *Server) postCheckpoint(request *restful.Request, response *restful.Response) {

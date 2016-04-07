@@ -294,7 +294,8 @@ func (mc *MigrationController) syncMigration(key string) error {
 	}
 	glog.V(4).Infof("Cloned pod: %+v", *clonePod)
 
-	// Set should checkpoint flag to true
+	// Set should checkpoint flag to true, this will induce the the kubelet to
+	// perform a checkpoint on all containers of the pod.
 	pod.Spec.ShouldCheckpoint = true
 	pod, err = mc.kubeClient.Core().Pods(m.Namespace).Update(pod)
 	if err != nil {

@@ -883,6 +883,10 @@ func (kl *Kubelet) getPodCheckpointsDir(podUID types.UID) string {
 	return path.Join(kl.getPodDir(podUID), "checkpoints")
 }
 
+func (kl *Kubelet) GetPodCheckpointsDir(podUID types.UID) string {
+	return kl.getPodCheckpointsDir(podUID)
+}
+
 // getPodCheckpointDir returns the full path to the per-pod data directory
 // under which container checkpoint data is held for a specified container.
 // This directory may not exist if the pod or container does not exist.
