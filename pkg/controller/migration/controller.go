@@ -377,7 +377,41 @@ func (mc *MigrationController) syncMigration(key string) error {
 		return err
 	}
 
-	// TODO: Set restore flag on clonePod
+	clonePod, err = mc.kubeClient.Core().Pods(m.Namespace).Get(clonePod.Name)
+	if err != nil {
+		return err
+	}
+	glog.Infof("clonePod before: %+v", clonePod)
+	// Set should restore flag to true, this will induce the the kubelet to
+	// perform a checkpoint on all containers of the clone pod.
+	clonePod.Spec.ShouldRestore = true
+	clonePod, err = mc.kubeClient.Core().Pods(m.Namespace).Update(clonePod)
+	if err != nil {
+		return err
+	}
+	glog.Infof("clonePod after: %+v", clonePod)
+
+	// Await completion of restoration, indicated by the running pod phase
+	for {
+		time.Sleep(500 * time.Millisecond)
+		clonePod, err = mc.kubeClient.Core().Pods(m.Namespace).Get(clonePod.Name)
+		if err != nil {
+			glog.Errorf("Error getting clone pod %s after restoring: %v", clonePod.Name, err)
+			return err
+		}
+		if clonePod.Status.Phase != api.PodRunning {
+			continue
+		}
+		break
+	}
+
+	// Update the migration status to Complete
+	m.Status.Phase = extensions.MigrationComplete
+	if m, err = mc.updateHandler(m); err != nil {
+		return err
+	}
+
+	// TODO: kill the source pod
 
 	return nil
 }

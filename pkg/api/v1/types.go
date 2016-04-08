@@ -1510,6 +1510,10 @@ type PodSpec struct {
 	// next update. Right now, this won't work properly if set before a pod is
 	// already running.
 	ShouldCheckpoint bool `json:"shouldCheckpoint,omitempty"`
+	// ShouldRestore, if true, means the pod will be restored during the next
+	// update. Currently, this requires checkpoint files to already be within the
+	// pod checkpoints directory, or restoration will fail!
+	ShouldRestore    bool `json:"shouldRestore,omitempty"`
 }
 
 // PodSecurityContext holds pod-level security attributes and common container settings.

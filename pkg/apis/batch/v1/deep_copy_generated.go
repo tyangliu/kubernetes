@@ -679,6 +679,7 @@ func deepCopy_v1_PodSpec(in v1.PodSpec, out *v1.PodSpec, c *conversion.Cloner) e
 	}
 	out.DeferRun = in.DeferRun
 	out.ShouldCheckpoint = in.ShouldCheckpoint
+	out.ShouldRestore = in.ShouldRestore
 	return nil
 }
 

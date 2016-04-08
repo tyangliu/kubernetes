@@ -1604,9 +1604,13 @@ func ValidatePodUpdate(newPod, oldPod *api.Pod) field.ErrorList {
 		mungedPod.Spec.ActiveDeadlineSeconds = &activeDeadlineSeconds
 	}
 	mungedPod.Spec.ShouldCheckpoint = oldPod.Spec.ShouldCheckpoint
+	mungedPod.Spec.ShouldRestore = oldPod.Spec.ShouldRestore
 	if !api.Semantic.DeepEqual(mungedPod.Spec, oldPod.Spec) {
 		//TODO: Pinpoint the specific field that causes the invalid error after we have strategic merge diff
-		allErrs = append(allErrs, field.Forbidden(specPath, "pod updates may not change fields other than `containers[*].image` or `spec.activeDeadlineSeconds` or `spec.shouldCheckpoint`"))
+		allErrs = append(allErrs, field.Forbidden(specPath,
+			"pod updates may not change fields other than `containers[*].image` or " +
+			"`spec.activeDeadlineSeconds` or `spec.shouldCheckpoint` or `spec.shouldRestore`",
+		))
 	}
 
 	return allErrs

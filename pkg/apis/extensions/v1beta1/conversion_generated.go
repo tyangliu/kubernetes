@@ -913,6 +913,7 @@ func autoConvert_api_PodSpec_To_v1_PodSpec(in *api.PodSpec, out *v1.PodSpec, s c
 	}
 	out.DeferRun = in.DeferRun
 	out.ShouldCheckpoint = in.ShouldCheckpoint
+	out.ShouldRestore = in.ShouldRestore
 	return nil
 }
 
@@ -2251,6 +2252,7 @@ func autoConvert_v1_PodSpec_To_api_PodSpec(in *v1.PodSpec, out *api.PodSpec, s c
 	}
 	out.DeferRun = in.DeferRun
 	out.ShouldCheckpoint = in.ShouldCheckpoint
+	out.ShouldRestore = in.ShouldRestore
 	return nil
 }
 
