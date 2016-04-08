@@ -199,7 +199,7 @@ func (in instrumentedDockerInterface) AttachToContainer(opts docker.AttachToCont
 	return err
 }
 
-func (in instrumentedDockerInterface) CheckpointContainer(opts docker.CheckpointContainerOptions) error {
+func (in instrumentedDockerInterface) CheckpointContainer(opts docker.CriuOptions) error {
 	const operation = "checkpoint"
 	defer recordOperation(operation, time.Now())
 

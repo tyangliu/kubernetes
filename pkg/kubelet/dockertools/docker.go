@@ -72,7 +72,7 @@ type DockerInterface interface {
 	StartExec(string, docker.StartExecOptions) error
 	InspectExec(id string) (*docker.ExecInspect, error)
 	AttachToContainer(opts docker.AttachToContainerOptions) error
-	CheckpointContainer(opts docker.CheckpointContainerOptions) error
+	CheckpointContainer(opts docker.CriuOptions) error
 	RestoreContainer(opts docker.RestoreContainerOptions) error
 }
 

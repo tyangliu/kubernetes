@@ -53,6 +53,7 @@ var (
 	ErrRunContainer  = errors.New("RunContainerError")
 	ErrKillContainer = errors.New("KillContainerError")
 	ErrCheckpointContainer = errors.New("CheckpointContainerError")
+	ErrRestoreContainer = errors.New("RestoreContainerError")
 	ErrVerifyNonRoot = errors.New("VerifyNonRootError")
 )
 
@@ -69,6 +70,7 @@ const (
 	StartContainer  SyncAction = "StartContainer"
 	KillContainer   SyncAction = "KillContainer"
 	CheckpointContainer SyncAction = "CheckpointContainer"
+	RestoreContainer SyncAction = "RestoreContainer"
 	SetupNetwork    SyncAction = "SetupNetwork"
 	TeardownNetwork SyncAction = "TeardownNetwork"
 )

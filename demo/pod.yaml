@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hello-test
+  labels:
+    app: web
+spec:
+  containers:
+    - name: helloworld
+      image: autilite/http-counter

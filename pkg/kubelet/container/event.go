@@ -21,6 +21,7 @@ const (
 	CreatedContainer        = "Created"
 	StartedContainer        = "Started"
 	CheckpointedContainer   = "Checkpointed"
+	RestoredContainer       = "Restored"
 	FailedToCreateContainer = "Failed"
 	FailedToStartContainer  = "Failed"
 	KillingContainer        = "Killing"

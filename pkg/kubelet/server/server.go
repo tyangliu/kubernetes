@@ -171,6 +171,7 @@ type HostInterface interface {
 	ListVolumesForPod(podUID types.UID) (map[string]volume.Volume, bool)
 	PLEGHealthCheck() (bool, error)
 	GetPodCheckpointsDir(podUID types.UID) string
+	GetPodDir(podUID types.UID) string
 }
 
 // NewServer initializes and configures a kubelet.Server object to handle HTTP requests.

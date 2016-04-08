@@ -294,7 +294,9 @@ func (podStatus *PodStatus) FindContainerStatusByName(containerName string) *Con
 func (podStatus *PodStatus) GetRunningContainerStatuses() []*ContainerStatus {
 	runnningContainerStatues := []*ContainerStatus{}
 	for _, containerStatus := range podStatus.ContainerStatuses {
-		if containerStatus.State == ContainerStateRunning {
+		// TODO: quick hack to get pending pods to appear in list for restoration,
+		// is there a better alternative?
+		if containerStatus.State == ContainerStateRunning || containerStatus.State == ContainerStateCheckpointed {
 			runnningContainerStatues = append(runnningContainerStatues, containerStatus)
 		}
 	}

@@ -431,7 +431,7 @@ func (f *FakeDockerClient) AttachToContainer(opts docker.AttachToContainerOption
 	return nil
 }
 
-func (f *FakeDockerClient) CheckpointContainer(opts docker.CheckpointContainerOptions) error {
+func (f *FakeDockerClient) CheckpointContainer(opts docker.CriuOptions) error {
 	f.Lock()
 	defer f.Unlock()
 	f.called = append(f.called, "checkpoint")

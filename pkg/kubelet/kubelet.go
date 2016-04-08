@@ -848,6 +848,10 @@ func (kl *Kubelet) getPodDir(podUID types.UID) string {
 	return newPath
 }
 
+func (kl *Kubelet) GetPodDir(podUID types.UID) string {
+	return kl.getPodDir(podUID)
+}
+
 // getPodVolumesDir returns the full path to the per-pod data directory under
 // which volumes are created for the specified pod.  This directory may not
 // exist if the pod does not exist.

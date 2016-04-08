@@ -1207,9 +1207,9 @@ func (c *Client) ExportContainer(opts ExportContainerOptions) error {
 	})
 }
 
-// CheckpointContainerOptions is the set of parameters to the
+// CriuOptions is the set of parameters to the
 // CheckpointContainer method.
-type CheckpointContainerOptions struct {
+type CriuOptions struct {
 	ID              string
 	ImagesDirectory string
 	WorkDirectory   string
@@ -1219,7 +1219,7 @@ type CheckpointContainerOptions struct {
 
 // CheckpointContainer checkpoints a running container and saves the state
 // as image files into the specified image directory.
-func (c *Client) CheckpointContainer(opts CheckpointContainerOptions) error {
+func (c *Client) CheckpointContainer(opts CriuOptions) error {
 	if opts.ID == "" {
 		return &NoSuchContainer{ID: opts.ID}
 	}
@@ -1238,22 +1238,21 @@ func (c *Client) CheckpointContainer(opts CheckpointContainerOptions) error {
 // RestoreContainerOptions is the set of parameters to the RestoreContainer
 // method.
 type RestoreContainerOptions struct {
-	ID              string
-	ImagesDirectory string
-	WorkDirectory   string
+	CriuOpts        CriuOptions
+	ForceRestore    bool
 }
 
 // RestoreContainer restores a container using image files from the specified
 // image directory.
 func (c *Client) RestoreContainer(opts RestoreContainerOptions) error {
-	if opts.ID == "" {
-		return &NoSuchContainer{ID: opts.ID}
+	if opts.CriuOpts.ID == "" {
+		return &NoSuchContainer{ID: opts.CriuOpts.ID}
 	}
-	path := fmt.Sprintf("/containers/%s/restore", opts.ID)
+	path := fmt.Sprintf("/containers/%s/restore", opts.CriuOpts.ID)
 	resp, err := c.do("POST", path, doOptions{data: opts})
 	if err != nil {
 		if e, ok := err.(*Error); ok && e.Status == http.StatusNotFound {
-			return &NoSuchContainer{ID: opts.ID}
+			return &NoSuchContainer{ID: opts.CriuOpts.ID}
 		}
 		return err
 	}

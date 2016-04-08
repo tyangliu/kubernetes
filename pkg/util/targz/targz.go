@@ -71,7 +71,7 @@ func ungzip(srcFile, destDir string) error {
 	}
 	defer archive.Close()
 
-	destDir = filepath.Join(destDir, archive.Name)
+	destDir = filepath.Join(destDir, strings.TrimSuffix(filepath.Base(srcFile), filepath.Ext(srcFile)))
 	writer, err := os.Create(destDir)
 	if err != nil {
 		return err
