@@ -299,8 +299,9 @@ var (
 func (dm *DockerManager) determineContainerIP(podNamespace, podName string, container *docker.Container) string {
 	result := ""
 
-	if container.NetworkSettings != nil {
-		result = container.NetworkSettings.IPAddress
+	if container.NetworkSettings != nil && container.HostConfig != nil {
+		netMode := container.HostConfig.NetworkMode
+		result = container.NetworkSettings.Networks[netMode].IPAddress
 	}
 
 	if dm.networkPlugin.Name() != network.DefaultPluginName {
@@ -586,6 +587,8 @@ func (dm *DockerManager) runContainer(
 		SecurityOpt: securityOpts,
 	}
 
+	nc := &docker.NetworkingConfig{}
+
 	if dm.cpuCFSQuota {
 		// if cpuLimit.Amount is nil, then the appropriate default value is returned to allow full usage of cpu resource.
 		cpuQuota, cpuPeriod := milliCPUToQuota(cpuLimit.MilliValue())
@@ -615,6 +618,7 @@ func (dm *DockerManager) runContainer(
 			Tty:       container.TTY,
 		},
 		HostConfig: hc,
+		NetworkingConfig: nc,
 	}
 
 	// Set network configuration for infra-container
