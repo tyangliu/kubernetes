@@ -620,10 +620,21 @@ func (s *Server) postCheckpoint(request *restful.Request, response *restful.Resp
 	}
 	// TODO: validate checkpoint location path
 
-	// Create the checkpoints.tar.gz file
 	path := s.host.GetPodCheckpointsDir(pod.UID)
-	archivePath := filepath.Join(path, fmt.Sprintf("%s.tar.gz", filepath.Base(path)))
 
+	// Clear out any existing checkpoint files
+	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		return os.Remove(path)
+	})
+	
+	// Create the checkpoints.tar.gz file
+	archivePath := filepath.Join(path, fmt.Sprintf("%s.tar.gz", filepath.Base(path)))
 	archive, err := os.Create(archivePath)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
