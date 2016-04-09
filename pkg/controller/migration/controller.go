@@ -213,7 +213,7 @@ func (mc *MigrationController) clonePod(m *extensions.Migration, pod *api.Pod) (
 	newPodSpec.NodeName = ""
 	newPodSpec.NetNamespace = pod.Spec.NetNamespace
 	// Ensure same IP as the source pod
-	newPodSpec.PodIP = ""//pod.Status.PodIP
+	newPodSpec.PodIP = pod.Spec.PodIP
 	newPodSpec.ShouldCheckpoint = false
 
 	// Clone labels and add one for migration controller discoverability
@@ -263,6 +263,9 @@ func (mc *MigrationController) cloneAndGetPod(m *extensions.Migration, pod *api.
 		}
 
 		clonedPod = &podList.Items[0]
+		if clonedPod.Status.Phase != api.PodCheckpointed {
+			continue
+		}
 		break
 	}
 
@@ -301,14 +304,6 @@ func (mc *MigrationController) syncMigration(key string) error {
 		return err
 	}
 
-	// Prepare a pod clone to restore to on the destination node
-	clonePod, err := mc.cloneAndGetPod(m, pod)
-	if err != nil {
-		glog.Errorf("Error cloning pod %s: %v", m.Spec.PodName, err)
-		return err
-	}
-	glog.V(4).Infof("Cloned pod: %+v", *clonePod)
-
 	// Set should checkpoint flag to true, this will induce the the kubelet to
 	// perform a checkpoint on all containers of the pod.
 	pod.Spec.ShouldCheckpoint = true
@@ -331,6 +326,14 @@ func (mc *MigrationController) syncMigration(key string) error {
 		}
 		break
 	}
+
+	// Prepare a pod clone to restore to on the destination node
+	clonePod, err := mc.cloneAndGetPod(m, pod)
+	if err != nil {
+		glog.Errorf("Error cloning pod %s: %v", m.Spec.PodName, err)
+		return err
+	}
+	glog.V(4).Infof("Cloned pod: %+v", *clonePod)
 
 	// Find the checkpoint image download path for the source pod
 	srcNode, err := mc.kubeClient.Core().Nodes().Get(pod.Spec.NodeName)

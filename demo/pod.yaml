@@ -6,6 +6,7 @@ metadata:
     app: web
 spec:
   netNamespace: test
+  podIP: 172.18.0.55
   containers:
     - name: helloworld
       image: autilite/http-counter
