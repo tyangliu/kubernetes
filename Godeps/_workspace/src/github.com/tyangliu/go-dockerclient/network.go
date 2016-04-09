@@ -192,17 +192,17 @@ func (c *Client) RemoveNetwork(id string) error {
 type NetworkConnectionOptions struct {
 	Container string
 
-	// EndpointConfig is only applicable to the ConnectNetwork call
-	EndpointConfig *EndpointConfig `json:"EndpointConfig,omitempty"`
+	// EndpointSettings is only applicable to the ConnectNetwork call
+	EndpointSettings *EndpointSettings `json:"EndpointSettings,omitempty"`
 
 	// Force is only applicable to the DisconnectNetwork call
 	Force bool
 }
 
-// EndpointConfig stores network endpoint details
+// EndpointSettings stores network endpoint details
 //
 // See https://goo.gl/RV7BJU for more details.
-type EndpointConfig struct {
+type EndpointSettings struct {
 	IPAMConfig *EndpointIPAMConfig
 	Links      []string
 	Aliases    []string

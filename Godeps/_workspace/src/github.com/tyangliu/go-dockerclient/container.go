@@ -99,14 +99,14 @@ func (p Port) Proto() string {
 
 // State represents the state of a container.
 type State struct {
-	Running      bool    `json:"Running,omitempty" yaml:"Running,omitempty"`
-	Paused       bool    `json:"Paused,omitempty" yaml:"Paused,omitempty"`
-	Restarting   bool    `json:"Restarting,omitempty" yaml:"Restarting,omitempty"`
-	Checkpointed bool    `json:"Checkpointed,omitempty" yaml:"Checkpointed,omitempty"`
-	OOMKilled    bool    `json:"OOMKilled,omitempty" yaml:"OOMKilled,omitempty"`
-	Pid          int     `json:"Pid,omitempty" yaml:"Pid,omitempty"`
-	ExitCode     int     `json:"ExitCode,omitempty" yaml:"ExitCode,omitempty"`
-	Error        string  `json:"Error,omitempty" yaml:"Error,omitempty"`
+	Running        bool      `json:"Running,omitempty" yaml:"Running,omitempty"`
+	Paused         bool      `json:"Paused,omitempty" yaml:"Paused,omitempty"`
+	Restarting     bool      `json:"Restarting,omitempty" yaml:"Restarting,omitempty"`
+	Checkpointed   bool      `json:"Checkpointed,omitempty" yaml:"Checkpointed,omitempty"`
+	OOMKilled      bool      `json:"OOMKilled,omitempty" yaml:"OOMKilled,omitempty"`
+	Pid            int       `json:"Pid,omitempty" yaml:"Pid,omitempty"`
+	ExitCode       int       `json:"ExitCode,omitempty" yaml:"ExitCode,omitempty"`
+	Error          string    `json:"Error,omitempty" yaml:"Error,omitempty"`
 	StartedAt      time.Time `json:"StartedAt,omitempty" yaml:"StartedAt,omitempty"`
 	FinishedAt     time.Time `json:"FinishedAt,omitempty" yaml:"FinishedAt,omitempty"`
 	CheckpointedAt time.Time `json:"CheckpointedAt,omitempty" yaml:"CheckpointedAt,omitempty"`
@@ -413,9 +413,10 @@ func (c *Client) ContainerChanges(id string) ([]Change, error) {
 //
 // See https://goo.gl/WxQzrr for more details.
 type CreateContainerOptions struct {
-	Name       string
-	Config     *Config     `qs:"-"`
-	HostConfig *HostConfig `qs:"-"`
+	Name             string
+	Config           *Config           `qs:"-"`
+	HostConfig       *HostConfig       `qs:"-"`
+	NetworkingConfig *NetworkingConfig `qs:"-"`
 }
 
 // CreateContainer creates a new container, returning the container instance,
@@ -430,10 +431,12 @@ func (c *Client) CreateContainer(opts CreateContainerOptions) (*Container, error
 		doOptions{
 			data: struct {
 				*Config
-				HostConfig *HostConfig `json:"HostConfig,omitempty" yaml:"HostConfig,omitempty"`
+				HostConfig       *HostConfig       `json:"HostConfig,omitempty" yaml:"HostConfig,omitempty"`
+				NetworkingConfig *NetworkingConfig `json:"NetworkingConfig,omitempty" yaml:"NetworkingConfig,omitempty"`
 			}{
 				opts.Config,
 				opts.HostConfig,
+				opts.NetworkingConfig,
 			},
 		},
 	)
@@ -572,6 +575,12 @@ type HostConfig struct {
 	Ulimits              []ULimit               `json:"Ulimits,omitempty" yaml:"Ulimits,omitempty"`
 	VolumeDriver         string                 `json:"VolumeDriver,omitempty" yaml:"VolumeDriver,omitempty"`
 	OomScoreAdj          int                    `json:"OomScoreAdj,omitempty" yaml:"OomScoreAdj,omitempty"`
+}
+
+// NetworkingConfig represents the container's networking configuration for each of its interfaces
+// Carries the networink configs specified in the `docker run` and `docker network connect` commands
+type NetworkingConfig struct {
+	EndpointsConfig map[string]*EndpointSettings `json:"EndpointsConfig,omitempty" yaml:"EndpointsConfig,omitempty"`
 }
 
 // StartContainer starts a container, returning an error in case of failure.
@@ -1238,8 +1247,8 @@ func (c *Client) CheckpointContainer(opts CriuOptions) error {
 // RestoreContainerOptions is the set of parameters to the RestoreContainer
 // method.
 type RestoreContainerOptions struct {
-	CriuOpts        CriuOptions
-	ForceRestore    bool
+	CriuOpts     CriuOptions
+	ForceRestore bool
 }
 
 // RestoreContainer restores a container using image files from the specified

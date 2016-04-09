@@ -935,7 +935,7 @@
 		},
 		{
 			"ImportPath": "github.com/tyangliu/go-dockerclient",
-			"Rev": "b6a2f689dd3dc50c1fb3043980d9fc21fe8294dd"
+			"Rev": "0be734f8c3affd89e540432a46d00ab77c3a7006"
 		},
 		{
 			"ImportPath": "github.com/ugorji/go/codec",
