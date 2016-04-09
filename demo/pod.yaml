@@ -5,6 +5,9 @@ metadata:
   labels:
     app: web
 spec:
+  netNamespace: test
   containers:
     - name: helloworld
       image: autilite/http-counter
+      ports:
+        - containerPort: 9000

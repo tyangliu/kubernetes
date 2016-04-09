@@ -1832,6 +1832,8 @@ func deepCopy_v1_PodSpec(in PodSpec, out *PodSpec, c *conversion.Cloner) error {
 	out.DeferRun = in.DeferRun
 	out.ShouldCheckpoint = in.ShouldCheckpoint
 	out.ShouldRestore = in.ShouldRestore
+	out.NetNamespace = in.NetNamespace
+	out.PodIP = in.PodIP
 	return nil
 }
 

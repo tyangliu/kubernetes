@@ -587,8 +587,6 @@ func (dm *DockerManager) runContainer(
 		SecurityOpt: securityOpts,
 	}
 
-	nc := &docker.NetworkingConfig{}
-
 	if dm.cpuCFSQuota {
 		// if cpuLimit.Amount is nil, then the appropriate default value is returned to allow full usage of cpu resource.
 		cpuQuota, cpuPeriod := milliCPUToQuota(cpuLimit.MilliValue())
@@ -618,7 +616,6 @@ func (dm *DockerManager) runContainer(
 			Tty:       container.TTY,
 		},
 		HostConfig: hc,
-		NetworkingConfig: nc,
 	}
 
 	// Set network configuration for infra-container
@@ -656,6 +653,19 @@ func setInfraContainerNetworkConfig(pod *api.Pod, netMode string, opts *kubecont
 	exposedPorts, portBindings := makePortsAndBindings(opts.PortMappings)
 	dockerOpts.Config.ExposedPorts = exposedPorts
 	dockerOpts.HostConfig.PortBindings = portBindings
+
+	if pod.Spec.NetNamespace != "" && pod.Spec.PodIP != ""  {
+		endpoints := make(map[string]*docker.EndpointSettings)
+		endpoints[pod.Spec.NetNamespace] = &docker.EndpointSettings{
+			IPAMConfig: &docker.EndpointIPAMConfig{
+				IPv4Address: pod.Spec.PodIP,
+			},
+		}
+
+		dockerOpts.NetworkingConfig = &docker.NetworkingConfig{
+			EndpointsConfig: endpoints,
+		}
+	}
 
 	if netMode != namespaceModeHost {
 		dockerOpts.Config.Hostname = opts.Hostname
@@ -1799,6 +1809,9 @@ func (dm *DockerManager) createPodInfraContainer(pod *api.Pod) (kubecontainer.Do
 	} else if dm.networkPlugin.Name() == "cni" || dm.networkPlugin.Name() == "kubenet" {
 		netNamespace = "none"
 	} else {
+		// Use netNamespace from pod if one is present. This needs to be validated,
+		// or invalid namespaces will cause create to fail!
+		netNamespace = pod.Spec.NetNamespace
 		// Docker only exports ports from the pod infra container.  Let's
 		// collect all of the relevant ports and export them.
 		for _, container := range pod.Spec.Containers {

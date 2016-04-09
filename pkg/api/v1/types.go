@@ -1514,6 +1514,10 @@ type PodSpec struct {
 	// update. Currently, this requires checkpoint files to already be within the
 	// pod checkpoints directory, or restoration will fail!
 	ShouldRestore    bool `json:"shouldRestore,omitempty"`
+	// Choose a non-default network namespace for static IP allocation.
+	NetNamespace string `json:"netNamespace,omitempty"`
+	// Statically allocate a pod IP if not empty and valid.
+	PodIP string `json:"podIP,omitempty"`
 }
 
 // PodSecurityContext holds pod-level security attributes and common container settings.

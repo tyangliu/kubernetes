@@ -341,6 +341,8 @@ func Convert_api_PodSpec_To_v1_PodSpec(in *api.PodSpec, out *PodSpec, s conversi
 	out.DeferRun = in.DeferRun
 	out.ShouldCheckpoint = in.ShouldCheckpoint
 	out.ShouldRestore = in.ShouldRestore
+	out.NetNamespace = in.NetNamespace
+	out.PodIP = in.PodIP
 	return nil
 }
 
@@ -425,6 +427,8 @@ func Convert_v1_PodSpec_To_api_PodSpec(in *PodSpec, out *api.PodSpec, s conversi
 	out.DeferRun = in.DeferRun
 	out.ShouldCheckpoint = in.ShouldCheckpoint
 	out.ShouldRestore = in.ShouldRestore
+	out.NetNamespace = in.NetNamespace
+	out.PodIP = in.PodIP
 	return nil
 }
 
