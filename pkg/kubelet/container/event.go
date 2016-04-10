@@ -20,6 +20,8 @@ const (
 	// Container event reason list
 	CreatedContainer        = "Created"
 	StartedContainer        = "Started"
+	CheckpointedContainer   = "Checkpointed"
+	RestoredContainer       = "Restored"
 	FailedToCreateContainer = "Failed"
 	FailedToStartContainer  = "Failed"
 	KillingContainer        = "Killing"

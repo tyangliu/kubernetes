@@ -510,6 +510,7 @@ func describePod(pod *api.Pod, events *api.EventList) (string, error) {
 		if len(pod.Status.Message) > 0 {
 			fmt.Fprintf(out, "Message:\t%s\n", pod.Status.Message)
 		}
+		fmt.Fprintf(out, "Spec Dump:\t%+v\n", pod.Spec)
 		fmt.Fprintf(out, "IP:\t%s\n", pod.Status.PodIP)
 		fmt.Fprintf(out, "Controllers:\t%s\n", printControllers(pod.Annotations))
 		fmt.Fprintf(out, "Containers:\n")
@@ -775,7 +776,7 @@ func DescribeContainers(containers []api.Container, containerStatuses []api.Cont
 
 	for _, container := range containers {
 		status, ok := statuses[container.Name]
-
+		fmt.Fprintf(out, "    Container Status Dump:\t%+v\n", status)
 		fmt.Fprintf(out, "  %v:\n", container.Name)
 		if ok {
 			fmt.Fprintf(out, "    Container ID:\t%s\n", status.ContainerID)
@@ -931,6 +932,9 @@ func describeStatus(stateName string, state api.ContainerState, out io.Writer) {
 		}
 		fmt.Fprintf(out, "      Started:\t%s\n", state.Terminated.StartedAt.Time.Format(time.RFC1123Z))
 		fmt.Fprintf(out, "      Finished:\t%s\n", state.Terminated.FinishedAt.Time.Format(time.RFC1123Z))
+	case state.Checkpointed != nil:
+		fmt.Fprintf(out, "    %s:\tCheckpointed\n", stateName)
+		fmt.Fprintf(out, "      Checkpointed At:\t%s\n", state.Checkpointed.CheckpointedAt.Time.Format(time.RFC1123Z))
 	default:
 		fmt.Fprintf(out, "    %s:\tWaiting\n", stateName)
 	}

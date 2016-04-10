@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"github.com/docker/docker/pkg/jsonmessage"
-	docker "github.com/fsouza/go-dockerclient"
+	docker "github.com/tyangliu/go-dockerclient"
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/credentialprovider"
@@ -67,11 +67,13 @@ type DockerInterface interface {
 	RemoveImage(image string) error
 	Logs(opts docker.LogsOptions) error
 	Version() (*docker.Env, error)
-	Info() (*docker.Env, error)
+	Info() (*docker.DockerInfo, error)
 	CreateExec(docker.CreateExecOptions) (*docker.Exec, error)
 	StartExec(string, docker.StartExecOptions) error
 	InspectExec(id string) (*docker.ExecInspect, error)
 	AttachToContainer(opts docker.AttachToContainerOptions) error
+	CheckpointContainer(opts docker.CriuOptions) error
+	RestoreContainer(opts docker.RestoreContainerOptions) error
 }
 
 // KubeletContainerName encapsulates a pod name and a Kubernetes container name.

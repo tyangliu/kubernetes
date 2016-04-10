@@ -24,6 +24,8 @@ import (
 	"net"
 	"net/http"
 	"net/http/pprof"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -58,6 +60,7 @@ import (
 	"k8s.io/kubernetes/pkg/util/httpstream/spdy"
 	"k8s.io/kubernetes/pkg/util/limitwriter"
 	utilruntime "k8s.io/kubernetes/pkg/util/runtime"
+	"k8s.io/kubernetes/pkg/util/targz"
 	"k8s.io/kubernetes/pkg/util/wsstream"
 	"k8s.io/kubernetes/pkg/volume"
 )
@@ -167,6 +170,8 @@ type HostInterface interface {
 	RootFsInfo() (cadvisorapiv2.FsInfo, error)
 	ListVolumesForPod(podUID types.UID) (map[string]volume.Volume, bool)
 	PLEGHealthCheck() (bool, error)
+	GetPodCheckpointsDir(podUID types.UID) string
+	GetPodDir(podUID types.UID) string
 }
 
 // NewServer initializes and configures a kubelet.Server object to handle HTTP requests.
@@ -310,6 +315,34 @@ func (s *Server) InstallDebuggingHandlers() {
 	ws.Route(ws.POST("/{podNamespace}/{podID}/{uid}").
 		To(s.getPortForward).
 		Operation("getPortForward"))
+	s.restfulCont.Add(ws)
+
+	ws = new(restful.WebService)
+	ws.
+		Path("/checkpoint")
+	// The GET checkpoint route is used to download container checkpoint
+	// images for the particular pod, once checkpoint is complete. Returns
+	// Not Found if image does not exist yet.
+	ws.Route(ws.GET("/{podNamespace}/{podID}").
+		To(s.getCheckpoint).
+		Operation("getCheckpoint"))
+	// The POST checkpoint route is used to signal the node to perform a
+	// checkpoint of a pod.
+	ws.Route(ws.POST("/{podNamespace}/{podID}").
+		To(s.postCheckpoint).
+		Operation("postCheckpoint"))
+	s.restfulCont.Add(ws)
+
+	ws = new(restful.WebService)
+	ws.
+		Path("/restore")
+	// The POST restore route is used to signal the node to perform a
+	// restore of a pod. The pod must have already been staged
+	// (created but not ran) and a path to download checkpoint images
+	// must be provided in the request.
+	ws.Route(ws.POST("/{podNamespace}/{podID}").
+		To(s.postRestore).
+		Operation("postRestore"))
 	s.restfulCont.Add(ws)
 
 	ws = new(restful.WebService)
@@ -544,6 +577,105 @@ const defaultStreamCreationTimeout = 30 * time.Second
 
 type Closer interface {
 	Close() error
+}
+
+func (s *Server) getCheckpoint(request *restful.Request, response *restful.Response) {
+	podNamespace, podID, _ := getPodCoordinates(request)
+	pod, ok := s.host.GetPodByName(podNamespace, podID)
+	if !ok {
+		response.WriteError(http.StatusNotFound, fmt.Errorf("pod does not exist"))
+		return
+	}
+
+	glog.V(4).Infof("Get Checkpoint: %s, %+v", pod.UID, pod)
+	path := s.host.GetPodCheckpointsDir(pod.UID)
+
+	if err := targz.Pack(path, path); err != nil {
+		glog.Errorf("Error packing checkpoint images: %v", err)
+	}
+	archivePath := filepath.Join(path, fmt.Sprintf("%s.tar.gz", filepath.Base(path)))
+	http.ServeFile(response.ResponseWriter, request.Request, archivePath)
+}
+
+// TODO: move this to somewhere shared so it's not duplicated in
+// migration controller
+type CheckpointLocation struct {
+	Path string
+}
+
+func (s *Server) postCheckpoint(request *restful.Request, response *restful.Response) {
+	podNamespace, podID, _ := getPodCoordinates(request)
+	pod, ok := s.host.GetPodByName(podNamespace, podID)
+	if !ok {
+		response.WriteError(http.StatusNotFound, fmt.Errorf("pod does not exist"))
+		return
+	}
+
+	glog.V(4).Infof("Post Checkpoint: %s, %+v", pod.UID, pod)
+
+	location := CheckpointLocation{}
+	if err := request.ReadEntity(&location); err != nil {
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	// TODO: validate checkpoint location path
+
+	path := s.host.GetPodCheckpointsDir(pod.UID)
+
+	// Clear out any existing checkpoint files
+	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		return os.Remove(path)
+	})
+	
+	// Create the checkpoints.tar.gz file
+	archivePath := filepath.Join(path, fmt.Sprintf("%s.tar.gz", filepath.Base(path)))
+	archive, err := os.Create(archivePath)
+	if err != nil {
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	defer archive.Close()
+
+	// Skip certificate check for http request
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+
+	// Download and write the checkpoints.tar.gz file
+	downloadRes, err := client.Get(location.Path)
+	if err != nil {
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	defer downloadRes.Body.Close()
+
+	_, err = io.Copy(archive, downloadRes.Body)
+	if err != nil {
+		response.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	if err := targz.Unpack(archivePath, path); err != nil {
+		glog.Errorf("Error unpacking checkpoint images: %v", err)
+	}
+}
+
+func (s *Server) postRestore(request *restful.Request, response *restful.Response) {
+	podNamespace, podID, uid := getPodCoordinates(request)
+	pod, ok := s.host.GetPodByName(podNamespace, podID)
+	if !ok {
+		response.WriteError(http.StatusNotFound, fmt.Errorf("pod does not exist"))
+		return
+	}
+
+	fmt.Println(uid, pod)
 }
 
 func (s *Server) getAttach(request *restful.Request, response *restful.Response) {

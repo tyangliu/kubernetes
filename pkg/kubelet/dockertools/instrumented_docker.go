@@ -19,7 +19,7 @@ package dockertools
 import (
 	"time"
 
-	docker "github.com/fsouza/go-dockerclient"
+	docker "github.com/tyangliu/go-dockerclient"
 	"k8s.io/kubernetes/pkg/kubelet/metrics"
 )
 
@@ -154,7 +154,7 @@ func (in instrumentedDockerInterface) Version() (*docker.Env, error) {
 	return out, err
 }
 
-func (in instrumentedDockerInterface) Info() (*docker.Env, error) {
+func (in instrumentedDockerInterface) Info() (*docker.DockerInfo, error) {
 	const operation = "info"
 	defer recordOperation(operation, time.Now())
 
@@ -195,6 +195,24 @@ func (in instrumentedDockerInterface) AttachToContainer(opts docker.AttachToCont
 	defer recordOperation(operation, time.Now())
 
 	err := in.client.AttachToContainer(opts)
+	recordError(operation, err)
+	return err
+}
+
+func (in instrumentedDockerInterface) CheckpointContainer(opts docker.CriuOptions) error {
+	const operation = "checkpoint"
+	defer recordOperation(operation, time.Now())
+
+	err := in.client.CheckpointContainer(opts)
+	recordError(operation, err)
+	return err
+}
+
+func (in instrumentedDockerInterface) RestoreContainer(opts docker.RestoreContainerOptions) error {
+	const operation = "restore"
+	defer recordOperation(operation, time.Now())
+
+	err := in.client.RestoreContainer(opts)
 	recordError(operation, err)
 	return err
 }

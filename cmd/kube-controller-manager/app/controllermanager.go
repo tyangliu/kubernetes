@@ -50,6 +50,7 @@ import (
 	endpointcontroller "k8s.io/kubernetes/pkg/controller/endpoint"
 	"k8s.io/kubernetes/pkg/controller/gc"
 	"k8s.io/kubernetes/pkg/controller/job"
+	"k8s.io/kubernetes/pkg/controller/migration"
 	namespacecontroller "k8s.io/kubernetes/pkg/controller/namespace"
 	nodecontroller "k8s.io/kubernetes/pkg/controller/node"
 	persistentvolumecontroller "k8s.io/kubernetes/pkg/controller/persistentvolume"
@@ -320,6 +321,12 @@ func StartControllers(s *options.CMServer, kubeClient *client.Client, kubeconfig
 			glog.Infof("Starting ReplicaSet controller")
 			go replicaset.NewReplicaSetController(clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "replicaset-controller")), ResyncPeriod(s), replicaset.BurstReplicas, s.LookupCacheSizeForRS).
 				Run(s.ConcurrentRSSyncs, wait.NeverStop)
+		}
+
+		if containsResource(resources, "migrations") {
+			glog.Infof("Starting migration controller")
+			go migration.NewMigrationController(clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "migration-controller")), ResyncPeriod(s)).
+				Run(s.ConcurrentMigrationSyncs, wait.NeverStop)
 		}
 	}
 

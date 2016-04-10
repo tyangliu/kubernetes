@@ -477,6 +477,9 @@ func normalizeStatus(status *api.PodStatus) *api.PodStatus {
 			normalizeTimeStamp(&c.Terminated.StartedAt)
 			normalizeTimeStamp(&c.Terminated.FinishedAt)
 		}
+		if c.Checkpointed != nil {
+			normalizeTimeStamp(&c.Checkpointed.CheckpointedAt)
+		}
 	}
 
 	if status.StartTime != nil {

@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+		http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -47,6 +47,7 @@ const (
 	Secrets                  Resource = "secrets"
 	ServiceAccounts          Resource = "serviceaccounts"
 	Services                 Resource = "services"
+	Migrations               Resource = "migrations"
 )
 
 var watchCacheSizes map[Resource]int
@@ -72,6 +73,7 @@ func init() {
 	watchCacheSizes[Secrets] = 100
 	watchCacheSizes[ServiceAccounts] = 100
 	watchCacheSizes[Services] = 100
+	watchCacheSizes[Migrations] = 100
 }
 
 func SetWatchCacheSizes(cacheSizes []string) {

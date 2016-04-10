@@ -1003,13 +1003,18 @@ type ContainerStateTerminated struct {
 	ContainerID string           `json:"containerID,omitempty"`
 }
 
+type ContainerStateCheckpointed struct {
+	CheckpointedAt unversioned.Time `json:"checkpointedAt,omitempty"`
+}
+
 // ContainerState holds a possible state of container.
 // Only one of its members may be specified.
 // If none of them is specified, the default one is ContainerStateWaiting.
 type ContainerState struct {
-	Waiting    *ContainerStateWaiting    `json:"waiting,omitempty"`
-	Running    *ContainerStateRunning    `json:"running,omitempty"`
-	Terminated *ContainerStateTerminated `json:"terminated,omitempty"`
+	Waiting      *ContainerStateWaiting      `json:"waiting,omitempty"`
+	Running      *ContainerStateRunning      `json:"running,omitempty"`
+	Terminated   *ContainerStateTerminated   `json:"terminated,omitempty"`
+	Checkpointed *ContainerStateCheckpointed `json:"checkpointed,omitempty"`
 }
 
 type ContainerStatus struct {
@@ -1045,6 +1050,9 @@ const (
 	// PodFailed means that all containers in the pod have terminated, and at least one container has
 	// terminated in a failure (exited with a non-zero exit code or was stopped by the system).
 	PodFailed PodPhase = "Failed"
+	// PodCheckpointed means that all containers in the pod have been checkpointed, and
+	// the images are ready for export at the designated route.
+	PodCheckpointed PodPhase = "Checkpointed"
 	// PodUnknown means that for some reason the state of the pod could not be obtained, typically due
 	// to an error in communicating with the host of the pod.
 	PodUnknown PodPhase = "Unknown"
@@ -1225,6 +1233,24 @@ type PodSpec struct {
 	// If specified, these secrets will be passed to individual puller implementations for them to use.  For example,
 	// in the case of docker, only DockerConfig type secrets are honored.
 	ImagePullSecrets []LocalObjectReference `json:"imagePullSecrets,omitempty"`
+	// DeferRun, if true, means the pod containers will be created but not run.
+	// This is currently used so we can stage a pod as the checkpoint/restore
+	// destination, and allow us to pull any required images before actually
+	// checkpointing and halting the source pod, so as to reduce downtime.
+	// Optional: Defaults to false.
+	DeferRun bool `json:"deferRun,omitempty"`
+	// ShouldCheckpoint, if true, means the pod will be checkpointed during the
+	// next update. Right now, this won't work properly if set before a pod is
+	// already running.
+	ShouldCheckpoint bool `json:"shouldCheckpoint,omitempty"`
+	// ShouldRestore, if true, means the pod will be restored during the next
+	// update. Currently, this requires checkpoint files to already be within the
+	// pod checkpoints directory, or restoration will fail!
+	ShouldRestore    bool `json:"shouldRestore,omitempty"`
+	// Choose a non-default network namespace for static IP allocation.
+	NetNamespace string `json:"netNamespace,omitempty"`
+	// Statically allocate a pod IP if not empty and valid.
+	PodIP string `json:"podIP,omitempty"`
 }
 
 // PodSecurityContext holds pod-level security attributes and common container settings.

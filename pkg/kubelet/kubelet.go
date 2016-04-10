@@ -848,6 +848,10 @@ func (kl *Kubelet) getPodDir(podUID types.UID) string {
 	return newPath
 }
 
+func (kl *Kubelet) GetPodDir(podUID types.UID) string {
+	return kl.getPodDir(podUID)
+}
+
 // getPodVolumesDir returns the full path to the per-pod data directory under
 // which volumes are created for the specified pod.  This directory may not
 // exist if the pod does not exist.
@@ -874,6 +878,29 @@ func (kl *Kubelet) getPodPluginsDir(podUID types.UID) string {
 // need to persist.  For non-per-pod plugin data, see getPluginDir.
 func (kl *Kubelet) getPodPluginDir(podUID types.UID, pluginName string) string {
 	return path.Join(kl.getPodPluginsDir(podUID), pluginName)
+}
+
+// getPodCheckpointsDir returns the full path to the directory under which
+// checkpointed container images for the pod are saved. This directory may not
+// exist if the pod does not exist.
+func (kl *Kubelet) getPodCheckpointsDir(podUID types.UID) string {
+	return path.Join(kl.getPodDir(podUID), "checkpoints")
+}
+
+func (kl *Kubelet) GetPodCheckpointsDir(podUID types.UID) string {
+	return kl.getPodCheckpointsDir(podUID)
+}
+
+// getPodCheckpointDir returns the full path to the per-pod data directory
+// under which container checkpoint data is held for a specified container.
+// This directory may not exist if the pod or container does not exist.
+func (kl *Kubelet) getPodCheckpointDir(podUID types.UID, ctrName string) string {
+	return path.Join(kl.getPodCheckpointsDir(podUID), ctrName)
+}
+
+// Exposing the container checkpoint dir to docker manager
+func (kl *Kubelet) GetContainerCheckpointDir(podUID types.UID, ctrName string) string {
+	return kl.getPodCheckpointDir(podUID, ctrName)
 }
 
 // getPodContainerDir returns the full path to the per-pod data directory under
@@ -1398,6 +1425,10 @@ func (kl *Kubelet) GenerateRunContainerOptions(pod *api.Pod, container *api.Cont
 		} else {
 			opts.PodContainerDir = p
 		}
+		p = kl.getPodCheckpointDir(pod.UID, container.Name)
+		if err := os.MkdirAll(p, 0750); err != nil {
+			glog.Errorf("Error on creating %q: %v", p, err)
+		}
 	}
 
 	opts.DNS, opts.DNSSearch, err = kl.GetClusterDNS(pod)
@@ -1704,6 +1735,9 @@ func (kl *Kubelet) makePodDataDirs(pod *api.Pod) error {
 		return err
 	}
 	if err := os.Mkdir(kl.getPodPluginsDir(uid), 0750); err != nil && !os.IsExist(err) {
+		return err
+	}
+	if err := os.Mkdir(kl.getPodCheckpointsDir(uid), 0750); err != nil && !os.IsExist(err) {
 		return err
 	}
 	return nil
@@ -3169,6 +3203,7 @@ func GetPhase(spec *api.PodSpec, info []api.ContainerStatus) api.PodPhase {
 	running := 0
 	waiting := 0
 	stopped := 0
+	checkpointed := 0
 	failed := 0
 	succeeded := 0
 	unknown := 0
@@ -3189,6 +3224,8 @@ func GetPhase(spec *api.PodSpec, info []api.ContainerStatus) api.PodPhase {
 			} else {
 				failed++
 			}
+		case containerStatus.State.Checkpointed != nil:
+			checkpointed++
 		case containerStatus.State.Waiting != nil:
 			if containerStatus.LastTerminationState.Terminated != nil {
 				stopped++
@@ -3209,6 +3246,8 @@ func GetPhase(spec *api.PodSpec, info []api.ContainerStatus) api.PodPhase {
 		// All containers have been started, and at least
 		// one container is running
 		return api.PodRunning
+	case running == 0 && checkpointed > 0 && unknown == 0:
+		return api.PodCheckpointed
 	case running == 0 && stopped > 0 && unknown == 0:
 		// All containers are terminated
 		if spec.RestartPolicy == api.RestartPolicyAlways {
@@ -3295,6 +3334,10 @@ func (kl *Kubelet) convertStatusToAPIStatus(pod *api.Pod, podStatus *kubecontain
 				StartedAt:   unversioned.NewTime(cs.StartedAt),
 				FinishedAt:  unversioned.NewTime(cs.FinishedAt),
 				ContainerID: cid,
+			}
+		case kubecontainer.ContainerStateCheckpointed:
+			status.State.Checkpointed = &api.ContainerStateCheckpointed{
+				CheckpointedAt: unversioned.NewTime(cs.CheckpointedAt),
 			}
 		default:
 			status.State.Waiting = &api.ContainerStateWaiting{}

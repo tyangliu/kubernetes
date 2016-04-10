@@ -20,15 +20,16 @@ import (
 	"fmt"
 	"strings"
 
-	docker "github.com/fsouza/go-dockerclient"
+	docker "github.com/tyangliu/go-dockerclient"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 )
 
 // This file contains helper functions to convert docker API types to runtime
 // (kubecontainer) types.
 const (
-	statusRunningPrefix = "Up"
-	statusExitedPrefix  = "Exited"
+	statusRunningPrefix      = "Up"
+	statusExitedPrefix       = "Exited"
+	statusCheckpointedPrefix = "Checkpointed"
 )
 
 func mapState(state string) kubecontainer.ContainerState {
@@ -39,6 +40,8 @@ func mapState(state string) kubecontainer.ContainerState {
 		return kubecontainer.ContainerStateRunning
 	case strings.HasPrefix(state, statusExitedPrefix):
 		return kubecontainer.ContainerStateExited
+	case strings.HasPrefix(state, statusCheckpointedPrefix):
+		return kubecontainer.ContainerStateCheckpointed
 	default:
 		return kubecontainer.ContainerStateUnknown
 	}

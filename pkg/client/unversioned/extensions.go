@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+		http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -37,6 +37,7 @@ type ExtensionsInterface interface {
 	ThirdPartyResourceNamespacer
 	ReplicaSetsNamespacer
 	PodSecurityPoliciesInterface
+	MigrationsNamespacer
 }
 
 // ExtensionsClient is used to interact with experimental Kubernetes features.
@@ -80,6 +81,10 @@ func (c *ExtensionsClient) ThirdPartyResources(namespace string) ThirdPartyResou
 
 func (c *ExtensionsClient) ReplicaSets(namespace string) ReplicaSetInterface {
 	return newReplicaSets(c, namespace)
+}
+
+func (c *ExtensionsClient) Migrations(namespace string) MigrationInterface {
+	return newMigrations(c, namespace)
 }
 
 // NewExtensions creates a new ExtensionsClient for the given config. This client

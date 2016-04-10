@@ -25,6 +25,7 @@ import (
 	"k8s.io/kubernetes/pkg/client/record"
 	"k8s.io/kubernetes/pkg/kubelet/util/format"
 	"k8s.io/kubernetes/pkg/runtime"
+	"k8s.io/kubernetes/pkg/types"
 	hashutil "k8s.io/kubernetes/pkg/util/hash"
 	"k8s.io/kubernetes/third_party/golang/expansion"
 
@@ -41,6 +42,7 @@ type HandlerRunner interface {
 type RuntimeHelper interface {
 	GenerateRunContainerOptions(pod *api.Pod, container *api.Container, podIP string) (*RunContainerOptions, error)
 	GetClusterDNS(pod *api.Pod) (dnsServers []string, dnsSearches []string, err error)
+	GetContainerCheckpointDir(podUID types.UID, ctrName string) string
 }
 
 // ShouldContainerBeRestarted checks whether a container needs to be restarted.
@@ -55,6 +57,12 @@ func ShouldContainerBeRestarted(container *api.Container, pod *api.Pod, podStatu
 	}
 	// Check whether container is running
 	if status.State == ContainerStateRunning {
+		return false
+	}
+	// Don't restart if container is checkpointed
+	// TODO: modify to check BOTH container checkpointed AND pod should checkpoint
+	// once things are working
+	if status.State == ContainerStateCheckpointed {
 		return false
 	}
 	// Always restart container in unknown state now

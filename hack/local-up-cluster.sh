@@ -22,7 +22,6 @@ DOCKER_NATIVE=${DOCKER_NATIVE:-""}
 DOCKER=(docker ${DOCKER_OPTS})
 DOCKERIZE_KUBELET=${DOCKERIZE_KUBELET:-""}
 ALLOW_PRIVILEGED=${ALLOW_PRIVILEGED:-""}
-ALLOW_SECURITY_CONTEXT=${ALLOW_SECURITY_CONTEXT:-""}
 RUNTIME_CONFIG=${RUNTIME_CONFIG:-""}
 NET_PLUGIN=${NET_PLUGIN:-""}
 KUBE_ROOT=$(dirname "${BASH_SOURCE}")/..
@@ -105,7 +104,7 @@ API_HOST=${API_HOST:-127.0.0.1}
 # By default only allow CORS for requests on localhost
 API_CORS_ALLOWED_ORIGINS=${API_CORS_ALLOWED_ORIGINS:-"/127.0.0.1(:[0-9]+)?$,/localhost(:[0-9]+)?$"}
 KUBELET_PORT=${KUBELET_PORT:-10250}
-LOG_LEVEL=${LOG_LEVEL:-3}
+LOG_LEVEL=${LOG_LEVEL:-5}
 CONTAINER_RUNTIME=${CONTAINER_RUNTIME:-"docker"}
 RKT_PATH=${RKT_PATH:-""}
 RKT_STAGE1_IMAGE=${RKT_STAGE1_IMAGE:-""}
@@ -226,28 +225,7 @@ function startETCD {
     kube::etcd::start
 }
 
-function set_service_accounts {
-    SERVICE_ACCOUNT_LOOKUP=${SERVICE_ACCOUNT_LOOKUP:-false}
-    SERVICE_ACCOUNT_KEY=${SERVICE_ACCOUNT_KEY:-"/tmp/kube-serviceaccount.key"}
-    # Generate ServiceAccount key if needed
-    if [[ ! -f "${SERVICE_ACCOUNT_KEY}" ]]; then
-      mkdir -p "$(dirname ${SERVICE_ACCOUNT_KEY})"
-      openssl genrsa -out "${SERVICE_ACCOUNT_KEY}" 2048 2>/dev/null
-    fi
-}
-
 function start_apiserver {
-    # Admission Controllers to invoke prior to persisting objects in cluster
-    if [[ -z "${ALLOW_SECURITY_CONTEXT}" ]]; then
-      ADMISSION_CONTROL=NamespaceLifecycle,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota
-    else
-      ADMISSION_CONTROL=NamespaceLifecycle,LimitRanger,ServiceAccount,ResourceQuota
-    fi
-    # This is the default dir and filename where the apiserver will generate a self-signed cert
-    # which should be able to be used as the CA to verify itself
-    CERT_DIR=/var/run/kubernetes
-    ROOT_CA_FILE=$CERT_DIR/apiserver.crt
-
     priv_arg=""
     if [[ -n "${ALLOW_PRIVILEGED}" ]]; then
       priv_arg="--allow-privileged "
@@ -260,10 +238,6 @@ function start_apiserver {
     APISERVER_LOG=/tmp/kube-apiserver.log
     sudo -E "${GO_OUT}/kube-apiserver" ${priv_arg} ${runtime_config}\
       --v=${LOG_LEVEL} \
-      --cert-dir="${CERT_DIR}" \
-      --service-account-key-file="${SERVICE_ACCOUNT_KEY}" \
-      --service-account-lookup="${SERVICE_ACCOUNT_LOOKUP}" \
-      --admission-control="${ADMISSION_CONTROL}" \
       --insecure-bind-address="${API_HOST}" \
       --insecure-port="${API_PORT}" \
       --etcd-servers="http://127.0.0.1:4001" \
@@ -285,8 +259,6 @@ function start_controller_manager {
     CTLRMGR_LOG=/tmp/kube-controller-manager.log
     sudo -E "${GO_OUT}/kube-controller-manager" \
       --v=${LOG_LEVEL} \
-      --service-account-private-key-file="${SERVICE_ACCOUNT_KEY}" \
-      --root-ca-file="${ROOT_CA_FILE}" \
       --enable-hostpath-provisioner="${ENABLE_HOSTPATH_PROVISIONER}" \
       ${node_cidr_args} \
       --master="${API_HOST}:${API_PORT}" >"${CTLRMGR_LOG}" 2>&1 &
@@ -441,7 +413,6 @@ trap cleanup EXIT
 fi
 echo "Starting services now!"
 startETCD
-set_service_accounts
 start_apiserver
 start_controller_manager
 start_kubelet
