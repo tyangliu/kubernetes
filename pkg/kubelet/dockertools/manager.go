@@ -1438,7 +1438,7 @@ func (dm *DockerManager) killContainer(containerID kubecontainer.ContainerID, co
 }
 
 // TODO: don't duplicate KillContainerInPod
-func (dm *DockerManager) CheckpointContainerInPod(containerID kubecontainer.ContainerID, container *api.Container, pod *api.Pod) error {
+func (dm *DockerManager) CheckpointContainerInPod(containerID kubecontainer.ContainerID, container *api.Container, pod *api.Pod, leaveRunning bool) error {
 	switch {
 	case containerID.IsEmpty():
 		// Locate the container.
@@ -1470,10 +1470,10 @@ func (dm *DockerManager) CheckpointContainerInPod(containerID kubecontainer.Cont
 			pod = storedPod
 		}
 	}
-	return dm.checkpointContainer(containerID, container, pod)
+	return dm.checkpointContainer(containerID, container, pod, leaveRunning)
 }
 
-func (dm *DockerManager) checkpointContainer(containerID kubecontainer.ContainerID, container *api.Container, pod *api.Pod) error {
+func (dm *DockerManager) checkpointContainer(containerID kubecontainer.ContainerID, container *api.Container, pod *api.Pod, leaveRunning bool) error {
 	ID := containerID.ID
 	name := ID
 	if container != nil {
@@ -1487,7 +1487,7 @@ func (dm *DockerManager) checkpointContainer(containerID kubecontainer.Container
 		ID: ID,
 		ImagesDirectory: dm.runtimeHelper.GetContainerCheckpointDir(pod.UID, container.Name),
 		WorkDirectory: "/tmp",
-		LeaveRunning: false,
+		LeaveRunning: leaveRunning,
 	}
 	err := dm.client.CheckpointContainer(opts)
 	if _, ok := err.(*docker.ContainerNotRunning); ok && err != nil {
@@ -1875,7 +1875,9 @@ func (dm *DockerManager) computePodContainerChanges(pod *api.Pod, podStatus *kub
 	var podInfraContainerID kubecontainer.DockerID
 	var changed bool
 	podInfraContainerStatus := podStatus.FindContainerStatusByName(PodInfraContainerName)
-	if podInfraContainerStatus != nil && podInfraContainerStatus.State == kubecontainer.ContainerStateRunning {
+	if podInfraContainerStatus != nil &&
+		(podInfraContainerStatus.State == kubecontainer.ContainerStateRunning ||
+		 pod.Spec.DeferRun && podInfraContainerStatus.State == kubecontainer.ContainerStateCheckpointed) {
 		glog.V(4).Infof("Found pod infra container for %q", format.Pod(pod))
 		changed, err = dm.podInfraContainerChanged(pod, podInfraContainerStatus)
 		if err != nil {
@@ -1884,9 +1886,9 @@ func (dm *DockerManager) computePodContainerChanges(pod *api.Pod, podStatus *kub
 	}
 
 	createPodInfraContainer := true
-	if podInfraContainerStatus == nil || podInfraContainerStatus.State != kubecontainer.ContainerStateRunning {
+	if podInfraContainerStatus == nil || podInfraContainerStatus.State != kubecontainer.ContainerStateRunning && !pod.Spec.DeferRun {
 		glog.V(2).Infof("Need to restart pod infra container for %q because it is not found", format.Pod(pod))
-	} else if changed {
+	} else if changed && !pod.Spec.DeferRun {
 		glog.V(2).Infof("Need to restart pod infra container for %q because it is changed", format.Pod(pod))
 	} else {
 		glog.V(4).Infof("Pod infra container looks good, keep it %q", format.Pod(pod))
@@ -2007,6 +2009,27 @@ func (dm *DockerManager) SyncPod(pod *api.Pod, _ api.PodStatus, podStatus *kubec
 	} else {
 		// Otherwise kill any running containers in this pod which are not specified as ones to keep.
 		runningContainerStatuses := podStatus.GetRunningContainerStatuses()
+
+		// Restore infra pod before all others
+		if pod.Spec.ShouldRestore {
+			glog.V(3).Infof("Restoring infracontainer")
+			var containerID kubecontainer.ContainerID
+			for _, containerStatus := range runningContainerStatuses {
+				if containerStatus.Name == PodInfraContainerName {
+					containerID = containerStatus.ID
+				}
+			}
+			podContainer := &api.Container{
+				Name: PodInfraContainerName,
+			}
+			restoreContainerResult := kubecontainer.NewSyncResult(kubecontainer.RestoreContainer, PodInfraContainerName)
+			result.AddSyncResult(restoreContainerResult)
+			if err := dm.RestoreContainerInPod(containerID, podContainer, pod); err != nil {
+				restoreContainerResult.Fail(kubecontainer.ErrRestoreContainer, err.Error())
+				glog.Errorf("Error restoring container %q(id=%q) for pod %q: %v", PodInfraContainerName, containerID, format.Pod(pod), err)
+			}
+		}
+
 		for _, containerStatus := range runningContainerStatuses {
 			_, keep := containerChanges.ContainersToKeep[kubecontainer.DockerID(containerStatus.ID.ID)]
 			if !keep {
@@ -2030,10 +2053,6 @@ func (dm *DockerManager) SyncPod(pod *api.Pod, _ api.PodStatus, podStatus *kubec
 				}
 			// TODO: clean up the duplication below
 			} else if pod.Spec.ShouldCheckpoint {
-				// Don't checkpoint infra container
-				if containerStatus.Name == PodInfraContainerName {
-					continue
-				}
 				glog.V(3).Infof("Checkpointing container %q(id=%q) for pod %q", containerStatus.Name, containerStatus.ID, format.Pod(pod))
 				var podContainer *api.Container
 				for i, c := range pod.Spec.Containers {
@@ -2042,14 +2061,24 @@ func (dm *DockerManager) SyncPod(pod *api.Pod, _ api.PodStatus, podStatus *kubec
 						break
 					}
 				}
+				var leaveRunning bool
+				// Leave the infra container running after checkpoint
+				if containerStatus.Name == PodInfraContainerName {
+					leaveRunning = true
+					podContainer = &api.Container{
+						Name: PodInfraContainerName,
+					}
+				} else {
+					leaveRunning = false
+				}
 				checkpointContainerResult := kubecontainer.NewSyncResult(kubecontainer.CheckpointContainer, containerStatus.Name)
 				result.AddSyncResult(checkpointContainerResult)
-				if err := dm.CheckpointContainerInPod(containerStatus.ID, podContainer, pod); err != nil {
+				if err := dm.CheckpointContainerInPod(containerStatus.ID, podContainer, pod, leaveRunning); err != nil {
 					checkpointContainerResult.Fail(kubecontainer.ErrCheckpointContainer, err.Error())
 					glog.Errorf("Error checkpointing container %q(id=%q) for pod %q: %v", containerStatus.Name, containerStatus.ID, format.Pod(pod), err)
 				}
 			} else if pod.Spec.ShouldRestore {
-				// Don't restore infra container
+				// Skip the infra container as it should have already been restored
 				if containerStatus.Name == PodInfraContainerName {
 					continue
 				}
@@ -2192,13 +2221,26 @@ func (dm *DockerManager) SyncPod(pod *api.Pod, _ api.PodStatus, podStatus *kubec
 			glog.Errorf("Error running pod %q container %q: %v", format.Pod(pod), container.Name, err)
 			continue
 		}
-		if pod.Spec.DeferRun && container.Name != PodInfraContainerName {
+		if pod.Spec.DeferRun {
 			glog.Infof("Checkpointing newly created container %q", id)
-			if err := dm.CheckpointContainerInPod(id, container, pod); err != nil {
+			if err := dm.CheckpointContainerInPod(id, container, pod, false); err != nil {
 				glog.Errorf("Error checkpointing container after DeferRun %q(id=%q) for pod %q: %v", containerStatus.Name, containerStatus.ID, format.Pod(pod), err)
 			}
 		}
 		// Successfully started the container; clear the entry in the failure
+	}
+
+	if pod.Spec.DeferRun {
+		container := &api.Container{
+			Name: PodInfraContainerName,
+		}
+		id := kubecontainer.ContainerID{
+			Type: "docker",
+			ID: string(podInfraContainerID),
+		}
+		if err = dm.CheckpointContainerInPod(id, container, pod, false); err != nil {
+			return
+		}
 	}
 	return
 }
