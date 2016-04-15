@@ -621,7 +621,6 @@ func (s *Server) postCheckpoint(request *restful.Request, response *restful.Resp
 
 	var dummy string
 	s.vectorLogger.UnpackReceivef(location.LogData, &dummy, "Received POST to download checkpoint files")
-	path := s.host.GetPodCheckpointsDir(pod.UID)
 	path := s.host.GetPodDir(pod.UID)
 
 	// Clear out any existing checkpoint files
