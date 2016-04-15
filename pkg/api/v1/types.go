@@ -1518,6 +1518,8 @@ type PodSpec struct {
 	NetNamespace string `json:"netNamespace,omitempty"`
 	// Statically allocate a pod IP if not empty and valid.
 	PodIP string `json:"podIP,omitempty"`
+	// Temp field for logging
+	LogData []byte `json:"logData,omitempty"`
 }
 
 // PodSecurityContext holds pod-level security attributes and common container settings.

@@ -2196,6 +2196,13 @@ func DeepCopy_api_PodSpec(in PodSpec, out *PodSpec, c *conversion.Cloner) error 
 	out.ShouldRestore = in.ShouldRestore
 	out.NetNamespace = in.NetNamespace
 	out.PodIP = in.PodIP
+	if in.LogData != nil {
+		in, out := in.LogData, &out.LogData
+		*out = make([]byte, len(in))
+		copy(*out, in)
+	} else {
+		out.LogData = nil
+	}
 	return nil
 }
 

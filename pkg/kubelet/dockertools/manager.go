@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path"
@@ -31,6 +32,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/arcaneiceman/GoVector/govec"
 	"github.com/coreos/go-semver/semver"
 	docker "github.com/tyangliu/go-dockerclient"
 	"github.com/golang/glog"
@@ -156,6 +158,8 @@ type DockerManager struct {
 	// A false value means the kubelet just backs off from setting it,
 	// it might already be true.
 	configureHairpinMode bool
+
+	vectorLogger *govec.GoLog
 }
 
 // A subset of the pod.Manager interface extracted for testing purposes.
@@ -244,6 +248,8 @@ func NewDockerManager(
 	for _, optf := range options {
 		optf(dm)
 	}
+
+	dm.vectorLogger = govec.Initialize("KubeletDockerManager" + strconv.Itoa(rand.Int()), "KubeletDockerManager")
 
 	return dm
 }
@@ -2034,6 +2040,7 @@ func (dm *DockerManager) SyncPod(pod *api.Pod, _ api.PodStatus, podStatus *kubec
 				if containerStatus.Name == PodInfraContainerName {
 					continue
 				}
+				dm.vectorLogger.LogLocalEventf("Checkpointing container %s for pod %s", containerStatus.Name, pod.Name)
 				glog.V(3).Infof("Checkpointing container %q(id=%q) for pod %q", containerStatus.Name, containerStatus.ID, format.Pod(pod))
 				var podContainer *api.Container
 				for i, c := range pod.Spec.Containers {
@@ -2053,6 +2060,7 @@ func (dm *DockerManager) SyncPod(pod *api.Pod, _ api.PodStatus, podStatus *kubec
 				if containerStatus.Name == PodInfraContainerName {
 					continue
 				}
+				dm.vectorLogger.LogLocalEventf("Restoring container %s for pod %s", containerStatus.Name, pod.Name)
 				glog.V(3).Infof("Restoring container %q(id=%q) for pod %q", containerStatus.Name, containerStatus.ID, format.Pod(pod))
 				var podContainer *api.Container
 				for i, c := range pod.Spec.Containers {
@@ -2185,6 +2193,7 @@ func (dm *DockerManager) SyncPod(pod *api.Pod, _ api.PodStatus, podStatus *kubec
 		// and IPC namespace.  PID mode cannot point to another container right now.
 		// See createPodInfraContainer for infra container setup.
 		namespaceMode := fmt.Sprintf("container:%v", podInfraContainerID)
+		dm.vectorLogger.LogLocalEventf("Running container %s for pod %s", container.Name, pod.Name)
 		id, err := dm.runContainerInPod(pod, container, namespaceMode, namespaceMode, getPidMode(pod), podIP, restartCount)
 		if err != nil {
 			startContainerResult.Fail(kubecontainer.ErrRunContainer, err.Error())
@@ -2194,6 +2203,7 @@ func (dm *DockerManager) SyncPod(pod *api.Pod, _ api.PodStatus, podStatus *kubec
 		}
 		if pod.Spec.DeferRun && container.Name != PodInfraContainerName {
 			glog.Infof("Checkpointing newly created container %q", id)
+			dm.vectorLogger.LogLocalEventf("Checkpointing newly created container %s for pod %s", container.Name, pod.Name)
 			if err := dm.CheckpointContainerInPod(id, container, pod); err != nil {
 				glog.Errorf("Error checkpointing container after DeferRun %q(id=%q) for pod %q: %v", containerStatus.Name, containerStatus.ID, format.Pod(pod), err)
 			}

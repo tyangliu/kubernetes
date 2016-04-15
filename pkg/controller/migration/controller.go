@@ -5,9 +5,11 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"time"
 
+	"github.com/arcaneiceman/GoVector/govec"
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/apis/extensions"
@@ -47,6 +49,8 @@ type MigrationController struct {
 
 	queue *workqueue.Type
 	recorder record.EventRecorder
+
+	vectorLogger *govec.GoLog
 }
 
 func NewMigrationController(kubeClient clientset.Interface, resyncPeriod controller.ResyncPeriodFunc) *MigrationController {
@@ -99,6 +103,7 @@ func NewMigrationController(kubeClient clientset.Interface, resyncPeriod control
 	mc.updateHandler = mc.updateMigrationStatus
 	mc.syncHandler = mc.syncMigration
 	mc.podStoreSynced = mc.podController.HasSynced
+	mc.vectorLogger = govec.Initialize("MigrationController", "MigrationController")
 	return mc
 }
 
@@ -117,6 +122,7 @@ func (mc *MigrationController) Run(workers int, stopCh <-chan struct{}) {
 func (mc *MigrationController) addMigrationNotification(obj interface{}) {
 	m := obj.(*extensions.Migration)
 	glog.V(4).Infof("Adding migration %s", m.Name)
+	mc.vectorLogger.LogLocalEventf("Migration Spec received: %+v", m)
 	mc.enqueueMigration(m)
 }
 
@@ -215,6 +221,7 @@ func (mc *MigrationController) clonePod(m *extensions.Migration, pod *api.Pod) (
 	// Ensure same IP as the source pod
 	newPodSpec.PodIP = pod.Spec.PodIP
 	newPodSpec.ShouldCheckpoint = false
+	newPodSpec.LogData = mc.vectorLogger.PrepareSendf("dummy", "Creating clone for pod: %s", pod.Name)
 
 	// Clone labels and add one for migration controller discoverability
 	// TODO: make the label key universally unique, so it's near impossible to
@@ -274,6 +281,7 @@ func (mc *MigrationController) cloneAndGetPod(m *extensions.Migration, pod *api.
 
 type CheckpointLocation struct {
 	Path string
+	LogData []byte
 }
 
 func (mc *MigrationController) syncMigration(key string) error {
@@ -369,7 +377,10 @@ func (mc *MigrationController) syncMigration(key string) error {
 
 	postPath := fmt.Sprintf("https://%s:%d/checkpoint/%s/%s", destNodeAddr, destKubeletPort, m.Namespace, clonePod.Name)
 
-	json, err := json.Marshal(CheckpointLocation{getPath})
+	postJson, err := json.Marshal(CheckpointLocation{
+		getPath,
+		mc.vectorLogger.PrepareSendf("dummy", "POST to initiate checkpoint download on node %s", destNode.Name),
+	})
 	if err != nil {
 		return err
 	}
@@ -380,10 +391,19 @@ func (mc *MigrationController) syncMigration(key string) error {
 	}
 	client := &http.Client{Transport: tr}
 
-	_, err = client.Post(postPath, "application/json", bytes.NewBuffer(json))
+	resp, err := client.Post(postPath, "application/json", bytes.NewBuffer(postJson))
 	if err != nil {
 		return err
 	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	var dummy string
+	mc.vectorLogger.UnpackReceivef(body, &dummy, "POST response received")
 
 	clonePod, err = mc.kubeClient.Core().Pods(m.Namespace).Get(clonePod.Name)
 	if err != nil {

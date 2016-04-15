@@ -916,6 +916,9 @@ func autoConvert_api_PodSpec_To_v1_PodSpec(in *api.PodSpec, out *v1.PodSpec, s c
 	out.ShouldRestore = in.ShouldRestore
 	out.NetNamespace = in.NetNamespace
 	out.PodIP = in.PodIP
+	if err := conversion.ByteSliceCopy(&in.LogData, &out.LogData, s); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -2257,6 +2260,9 @@ func autoConvert_v1_PodSpec_To_api_PodSpec(in *v1.PodSpec, out *api.PodSpec, s c
 	out.ShouldRestore = in.ShouldRestore
 	out.NetNamespace = in.NetNamespace
 	out.PodIP = in.PodIP
+	if err := conversion.ByteSliceCopy(&in.LogData, &out.LogData, s); err != nil {
+		return err
+	}
 	return nil
 }
 

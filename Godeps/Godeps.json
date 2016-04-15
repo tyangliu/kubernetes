@@ -49,6 +49,10 @@
 			"Rev": "5d54e27f1764a0309eafe12c9df7bac03f241646"
 		},
 		{
+			"ImportPath": "github.com/arcaneiceman/GoVector",
+			"Rev": "caef2325c0aa854c70ebbaf34f4df4418f6a2104"
+		},
+		{
 			"ImportPath": "github.com/armon/go-metrics",
 			"Rev": "345426c77237ece5dab0e1605c3e4b35c3f54757"
 		},

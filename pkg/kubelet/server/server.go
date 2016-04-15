@@ -17,10 +17,13 @@ limitations under the License.
 package server
 
 import (
+	"bytes"
 	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/http/pprof"
@@ -32,6 +35,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/arcaneiceman/GoVector/govec"
 	restful "github.com/emicklei/go-restful"
 	"github.com/golang/glog"
 	cadvisorapi "github.com/google/cadvisor/info/v1"
@@ -71,6 +75,7 @@ type Server struct {
 	host             HostInterface
 	restfulCont      containerInterface
 	resourceAnalyzer stats.ResourceAnalyzer
+	vectorLogger     *govec.GoLog
 }
 
 type TLSOptions struct {
@@ -189,6 +194,8 @@ func NewServer(host HostInterface, resourceAnalyzer stats.ResourceAnalyzer, auth
 	if enableDebuggingHandlers {
 		server.InstallDebuggingHandlers()
 	}
+
+	server.vectorLogger = govec.Initialize("KubeletServer" + strconv.Itoa(rand.Int()), "KubeletServer")
 	return server
 }
 
@@ -331,18 +338,9 @@ func (s *Server) InstallDebuggingHandlers() {
 	ws.Route(ws.POST("/{podNamespace}/{podID}").
 		To(s.postCheckpoint).
 		Operation("postCheckpoint"))
-	s.restfulCont.Add(ws)
-
-	ws = new(restful.WebService)
-	ws.
-		Path("/restore")
-	// The POST restore route is used to signal the node to perform a
-	// restore of a pod. The pod must have already been staged
-	// (created but not ran) and a path to download checkpoint images
-	// must be provided in the request.
-	ws.Route(ws.POST("/{podNamespace}/{podID}").
-		To(s.postRestore).
-		Operation("postRestore"))
+	ws.Route(ws.POST("/{podNamespace}/{podID}/log").
+		To(s.postLogGetCheckpoint).
+		Operation("postLogGetCheckpoint"))
 	s.restfulCont.Add(ws)
 
 	ws = new(restful.WebService)
@@ -601,6 +599,7 @@ func (s *Server) getCheckpoint(request *restful.Request, response *restful.Respo
 // migration controller
 type CheckpointLocation struct {
 	Path string
+	LogData []byte
 }
 
 func (s *Server) postCheckpoint(request *restful.Request, response *restful.Response) {
@@ -620,6 +619,8 @@ func (s *Server) postCheckpoint(request *restful.Request, response *restful.Resp
 	}
 	// TODO: validate checkpoint location path
 
+	var dummy string
+	s.vectorLogger.UnpackReceivef(location.LogData, &dummy, "Received POST to download checkpoint files")
 	path := s.host.GetPodCheckpointsDir(pod.UID)
 
 	// Clear out any existing checkpoint files
@@ -632,7 +633,7 @@ func (s *Server) postCheckpoint(request *restful.Request, response *restful.Resp
 		}
 		return os.Remove(path)
 	})
-	
+
 	// Create the checkpoints.tar.gz file
 	archivePath := filepath.Join(path, fmt.Sprintf("%s.tar.gz", filepath.Base(path)))
 	archive, err := os.Create(archivePath)
@@ -656,6 +657,16 @@ func (s *Server) postCheckpoint(request *restful.Request, response *restful.Resp
 	}
 	defer downloadRes.Body.Close()
 
+	logMsg := s.vectorLogger.PrepareSendf("dummy", "GET checkpoint files from %s", location.Path)
+	logRes, err := client.Post(location.Path + "/log", "application/octet-stream", bytes.NewBuffer(logMsg))
+
+	defer logRes.Body.Close()
+	body, err := ioutil.ReadAll(logRes.Body)
+	if err != nil {
+		return
+	}
+	s.vectorLogger.UnpackReceivef(body, &dummy, "Finished downloading checkpoint files")
+
 	_, err = io.Copy(archive, downloadRes.Body)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
@@ -665,17 +676,28 @@ func (s *Server) postCheckpoint(request *restful.Request, response *restful.Resp
 	if err := targz.Unpack(archivePath, path); err != nil {
 		glog.Errorf("Error unpacking checkpoint images: %v", err)
 	}
+
+	data := s.vectorLogger.PrepareSendf("dummy", "POST complete to download checkpoint")
+	_, err = response.Write(data)
+	if err != nil {
+		glog.Errorf("Error sending response: %v", err)
+	}
 }
 
-func (s *Server) postRestore(request *restful.Request, response *restful.Response) {
-	podNamespace, podID, uid := getPodCoordinates(request)
-	pod, ok := s.host.GetPodByName(podNamespace, podID)
-	if !ok {
-		response.WriteError(http.StatusNotFound, fmt.Errorf("pod does not exist"))
+func (s *Server) postLogGetCheckpoint(request *restful.Request, response *restful.Response) {
+	defer request.Request.Body.Close()
+	body, err := ioutil.ReadAll(request.Request.Body)
+	if err != nil {
 		return
 	}
+	var dummy string
+	s.vectorLogger.UnpackReceivef(body, &dummy, "Received GET to download checkpoint files")
 
-	fmt.Println(uid, pod)
+	data := s.vectorLogger.PrepareSendf("dummy", "GET complete to download checkpoint files")
+	_, err = response.Write(data)
+	if err != nil {
+		glog.Errorf("Error sending response: %v", err)
+	}
 }
 
 func (s *Server) getAttach(request *restful.Request, response *restful.Response) {

@@ -1605,6 +1605,7 @@ func ValidatePodUpdate(newPod, oldPod *api.Pod) field.ErrorList {
 	}
 	mungedPod.Spec.ShouldCheckpoint = oldPod.Spec.ShouldCheckpoint
 	mungedPod.Spec.ShouldRestore = oldPod.Spec.ShouldRestore
+	mungedPod.Spec.LogData = oldPod.Spec.LogData
 	if !api.Semantic.DeepEqual(mungedPod.Spec, oldPod.Spec) {
 		//TODO: Pinpoint the specific field that causes the invalid error after we have strategic merge diff
 		allErrs = append(allErrs, field.Forbidden(specPath,

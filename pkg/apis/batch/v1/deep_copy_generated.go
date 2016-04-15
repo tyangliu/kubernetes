@@ -682,6 +682,14 @@ func deepCopy_v1_PodSpec(in v1.PodSpec, out *v1.PodSpec, c *conversion.Cloner) e
 	out.ShouldRestore = in.ShouldRestore
 	out.NetNamespace = in.NetNamespace
 	out.PodIP = in.PodIP
+	if in.LogData != nil {
+		out.LogData = make([]uint8, len(in.LogData))
+		for i := range in.LogData {
+			out.LogData[i] = in.LogData[i]
+		}
+	} else {
+		out.LogData = nil
+	}
 	return nil
 }
 
