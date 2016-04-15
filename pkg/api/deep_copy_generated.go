@@ -493,6 +493,7 @@ func DeepCopy_api_Container(in Container, out *Container, c *conversion.Cloner) 
 	out.Stdin = in.Stdin
 	out.StdinOnce = in.StdinOnce
 	out.TTY = in.TTY
+	out.ContainerIP = in.ContainerIP
 	return nil
 }
 

@@ -586,7 +586,7 @@ func (s *Server) getCheckpoint(request *restful.Request, response *restful.Respo
 	}
 
 	glog.V(4).Infof("Get Checkpoint: %s, %+v", pod.UID, pod)
-	path := s.host.GetPodCheckpointsDir(pod.UID)
+	path := s.host.GetPodDir(pod.UID)
 
 	if err := targz.Pack(path, path); err != nil {
 		glog.Errorf("Error packing checkpoint images: %v", err)
@@ -622,9 +622,21 @@ func (s *Server) postCheckpoint(request *restful.Request, response *restful.Resp
 	var dummy string
 	s.vectorLogger.UnpackReceivef(location.LogData, &dummy, "Received POST to download checkpoint files")
 	path := s.host.GetPodCheckpointsDir(pod.UID)
+	path := s.host.GetPodDir(pod.UID)
 
 	// Clear out any existing checkpoint files
-	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(path + "checkpoints/", func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		return os.Remove(path)
+	})
+
+	// Clear out any existing volume files
+	err = filepath.Walk(path + "volumes/", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}

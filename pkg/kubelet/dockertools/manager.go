@@ -631,6 +631,18 @@ func (dm *DockerManager) runContainer(
 	// Set network configuration for infra-container
 	if container.Name == PodInfraContainerName {
 		setInfraContainerNetworkConfig(pod, netMode, opts, &dockerOpts)
+	// Give container its own IP if specified
+	} else if container.ContainerIP != "" && !pod.Spec.DeferRun {
+		endpoints := make(map[string]*docker.EndpointSettings)
+		endpoints[pod.Spec.NetNamespace] = &docker.EndpointSettings{
+			IPAMConfig: &docker.EndpointIPAMConfig{
+				IPv4Address: container.ContainerIP,
+			},
+		}
+
+		dockerOpts.NetworkingConfig = &docker.NetworkingConfig{
+			EndpointsConfig: endpoints,
+		}
 	}
 
 	setEntrypointAndCommand(container, opts, &dockerOpts)
@@ -2204,8 +2216,9 @@ func (dm *DockerManager) SyncPod(pod *api.Pod, _ api.PodStatus, podStatus *kubec
 		// to the namespace of the infra container should use namespaceMode.  This includes things like the net namespace
 		// and IPC namespace.  PID mode cannot point to another container right now.
 		// See createPodInfraContainer for infra container setup.
-		namespaceMode := fmt.Sprintf("container:%v", podInfraContainerID)
 		dm.vectorLogger.LogLocalEventf("Running container %s for pod %s", container.Name, pod.Name)
+		// namespaceMode := fmt.Sprintf("container:%v", podInfraContainerID)
+		namespaceMode := pod.Spec.NetNamespace
 		id, err := dm.runContainerInPod(pod, container, namespaceMode, namespaceMode, getPidMode(pod), podIP, restartCount)
 		if err != nil {
 			startContainerResult.Fail(kubecontainer.ErrRunContainer, err.Error())

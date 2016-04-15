@@ -267,6 +267,7 @@ func autoConvert_api_Container_To_v1_Container(in *api.Container, out *v1.Contai
 	out.Stdin = in.Stdin
 	out.StdinOnce = in.StdinOnce
 	out.TTY = in.TTY
+	out.ContainerIP = in.ContainerIP
 	return nil
 }
 
@@ -1635,6 +1636,7 @@ func autoConvert_v1_Container_To_api_Container(in *v1.Container, out *api.Contai
 	out.Stdin = in.Stdin
 	out.StdinOnce = in.StdinOnce
 	out.TTY = in.TTY
+	out.ContainerIP = in.ContainerIP
 	return nil
 }
 
