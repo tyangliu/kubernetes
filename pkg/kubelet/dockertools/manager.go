@@ -2184,7 +2184,8 @@ func (dm *DockerManager) SyncPod(pod *api.Pod, _ api.PodStatus, podStatus *kubec
 		// to the namespace of the infra container should use namespaceMode.  This includes things like the net namespace
 		// and IPC namespace.  PID mode cannot point to another container right now.
 		// See createPodInfraContainer for infra container setup.
-		namespaceMode := fmt.Sprintf("container:%v", podInfraContainerID)
+		// namespaceMode := fmt.Sprintf("container:%v", podInfraContainerID)
+		namespaceMode := pod.Spec.NetNamespace
 		id, err := dm.runContainerInPod(pod, container, namespaceMode, namespaceMode, getPidMode(pod), podIP, restartCount)
 		if err != nil {
 			startContainerResult.Fail(kubecontainer.ErrRunContainer, err.Error())
