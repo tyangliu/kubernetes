@@ -40,6 +40,7 @@ import (
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/client/record"
+	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/lifecycle"
 	"k8s.io/kubernetes/pkg/kubelet/metrics"
@@ -101,6 +102,7 @@ var (
 
 type DockerManager struct {
 	client              DockerInterface
+	kubeClient          clientset.Interface
 	recorder            record.EventRecorder
 	containerRefManager *kubecontainer.RefManager
 	os                  kubecontainer.OSInterface
@@ -181,6 +183,7 @@ func PodInfraContainerEnv(env map[string]string) kubecontainer.Option {
 
 func NewDockerManager(
 	client DockerInterface,
+	kubeClient clientset.Interface,
 	recorder record.EventRecorder,
 	livenessManager proberesults.Manager,
 	containerRefManager *kubecontainer.RefManager,
@@ -218,6 +221,7 @@ func NewDockerManager(
 
 	dm := &DockerManager{
 		client:                 client,
+		kubeClient:             kubeClient,
 		recorder:               recorder,
 		containerRefManager:    containerRefManager,
 		os:                     osInterface,
@@ -1986,6 +1990,9 @@ func (dm *DockerManager) SyncPod(pod *api.Pod, _ api.PodStatus, podStatus *kubec
 		var dummy string
 		dm.vectorLogger.UnpackReceivef(pod.Spec.LogData, &dummy, "Syncing pod %s", pod.Name)
 	}
+	defer func() {
+		pod.Spec.LogData = dm.vectorLogger.PrepareSendf("dummy", "Finished syncing pod %s", pod.Name)
+	}()
 
 	containerChanges, err := dm.computePodContainerChanges(pod, podStatus)
 	if err != nil {

@@ -273,6 +273,7 @@ func (mc *MigrationController) cloneAndGetPod(m *extensions.Migration, pod *api.
 		if clonedPod.Status.Phase != api.PodCheckpointed {
 			continue
 		}
+
 		break
 	}
 
@@ -285,6 +286,9 @@ type CheckpointLocation struct {
 }
 
 func (mc *MigrationController) syncMigration(key string) error {
+	// Used for unpacking logs
+	var dummy string
+
 	startTime := time.Now()
 	defer func() {
 		glog.V(4).Infof("Finished syncing migration %q (%v)", key, time.Now().Sub(startTime))
@@ -336,13 +340,17 @@ func (mc *MigrationController) syncMigration(key string) error {
 		break
 	}
 
+	mc.vectorLogger.UnpackReceivef(pod.Spec.LogData, &dummy, "Pod status updated to Checkpointed")
+
 	// Prepare a pod clone to restore to on the destination node
 	clonePod, err := mc.cloneAndGetPod(m, pod)
 	if err != nil {
 		glog.Errorf("Error cloning pod %s: %v", m.Spec.PodName, err)
 		return err
 	}
+
 	glog.V(4).Infof("Cloned pod: %+v", *clonePod)
+	mc.vectorLogger.UnpackReceivef(clonePod.Spec.LogData, &dummy, "Clone pod status updated to Checkpointed")
 
 	// Find the checkpoint image download path for the source pod
 	srcNode, err := mc.kubeClient.Core().Nodes().Get(pod.Spec.NodeName)
@@ -403,7 +411,6 @@ func (mc *MigrationController) syncMigration(key string) error {
 		return err
 	}
 
-	var dummy string
 	mc.vectorLogger.UnpackReceivef(body, &dummy, "POST response received")
 
 	clonePod, err = mc.kubeClient.Core().Pods(m.Namespace).Get(clonePod.Name)

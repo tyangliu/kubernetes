@@ -385,6 +385,7 @@ func NewMainKubelet(
 		// Only supported one for now, continue.
 		klet.containerRuntime = dockertools.NewDockerManager(
 			dockerClient,
+			klet.kubeClient,
 			kubecontainer.FilterEventRecorder(recorder),
 			klet.livenessManager,
 			containerRefManager,
