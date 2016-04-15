@@ -1982,6 +1982,11 @@ func (dm *DockerManager) SyncPod(pod *api.Pod, _ api.PodStatus, podStatus *kubec
 		metrics.ContainerManagerLatency.WithLabelValues("SyncPod").Observe(metrics.SinceInMicroseconds(start))
 	}()
 
+	if len(pod.Spec.LogData) > 0 {
+		var dummy string
+		dm.vectorLogger.UnpackReceivef(pod.Spec.LogData, &dummy, "Syncing pod %s", pod.Name)
+	}
+
 	containerChanges, err := dm.computePodContainerChanges(pod, podStatus)
 	if err != nil {
 		result.Fail(err)

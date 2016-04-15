@@ -315,6 +315,7 @@ func (mc *MigrationController) syncMigration(key string) error {
 	// Set should checkpoint flag to true, this will induce the the kubelet to
 	// perform a checkpoint on all containers of the pod.
 	pod.Spec.ShouldCheckpoint = true
+	pod.Spec.LogData = mc.vectorLogger.PrepareSendf("dummy", "Checkpointing source pod: %s", pod.Name)
 	pod, err = mc.kubeClient.Core().Pods(m.Namespace).Update(pod)
 	if err != nil {
 		return err
@@ -413,6 +414,7 @@ func (mc *MigrationController) syncMigration(key string) error {
 	// Set should restore flag to true, this will induce the the kubelet to
 	// perform a checkpoint on all containers of the clone pod.
 	clonePod.Spec.ShouldRestore = true
+	clonePod.Spec.LogData = mc.vectorLogger.PrepareSendf("dummy", "Restoring clone pod: %s", clonePod.Name)
 	clonePod, err = mc.kubeClient.Core().Pods(m.Namespace).Update(clonePod)
 	if err != nil {
 		return err
