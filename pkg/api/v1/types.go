@@ -1139,6 +1139,8 @@ type Container struct {
 	// Whether this container should allocate a TTY for itself, also requires 'stdin' to be true.
 	// Default is false.
 	TTY bool `json:"tty,omitempty"`
+
+	ContainerIP string `json:"containerIP,omitempty"`
 }
 
 // Handler defines a specific action that should be taken

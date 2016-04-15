@@ -634,7 +634,7 @@ func (s *Server) postCheckpoint(request *restful.Request, response *restful.Resp
 	})
 
 	// Clear out any existing volume files
-	err := filepath.Walk(path + "volumes/", func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(path + "volumes/", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
